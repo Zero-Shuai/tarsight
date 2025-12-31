@@ -34,12 +34,15 @@ export type TestCase = {
   module_id: string
   case_id: string
   test_name: string
-  api_method: string
-  api_path: string
-  api_headers?: Record<string, string>
-  api_params?: Record<string, any>
-  api_body?: Record<string, any>
-  expected_result?: Record<string, any>
+  description?: string
+  method: string
+  url: string
+  expected_status: number
+  headers?: Record<string, string>
+  body?: Record<string, any>
+  variables?: Record<string, any>
+  tags?: string[]
+  level: string
   is_active: boolean
   created_at: string
   updated_at?: string
@@ -117,12 +120,16 @@ export type TestCaseFormData = {
   module_id: string
   case_id: string
   test_name: string
-  api_method: string
-  api_path: string
-  api_headers?: string
-  api_params?: string
-  api_body?: string
-  expected_result?: string
+  description?: string
+  method: string
+  url: string
+  expected_status: number
+  headers?: Record<string, string>
+  body?: Record<string, any>
+  variables?: Record<string, any>
+  tags?: string[]
+  level: string
+  is_active: boolean
 }
 
 // ============================================
