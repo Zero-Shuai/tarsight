@@ -31,6 +31,7 @@ services:
       # Python 测试执行环境配置
       - PROJECT_ROOT=/app/python
       - PYTHON_PATH=/usr/bin/python3
+      - PYTHONPATH=/app/python
     networks:
       - tarsight-network
     # 健康检查

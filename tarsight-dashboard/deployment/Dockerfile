@@ -35,6 +35,9 @@ ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
+# 安装 Python 3 和必要的依赖
+RUN apk add --no-cache python3 py3-pip py3-pip gcc musl-dev libffi-dev openssl-dev
+
 # 创建非 root 用户
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
@@ -43,6 +46,12 @@ RUN adduser --system --uid 1001 nextjs
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
+
+# 复制 Python 测试代码（从后端项目）
+COPY ../supabase_version ./python
+
+# 安装 Python 依赖
+RUN pip3 install --no-cache-dir pytest pytest-html allure-pytest supabase requests python-dotenv
 
 # 修改文件所有者
 RUN chown -R nextjs:nodejs /app
