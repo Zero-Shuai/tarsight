@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Eye, EyeOff, Key, Save, ShieldCheck, CheckCircle, XCircle, Loader2 } from 'lucide-react'
+import { Eye, EyeOff, Key, Save, RefreshCw, ShieldCheck, CheckCircle, XCircle, Loader2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 
 interface ProjectConfig {
