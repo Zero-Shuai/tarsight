@@ -24,7 +24,6 @@ from utils.supabase_client import get_supabase_client
 from utils.json_test_recorder import JsonTestRecorder, get_json_recorder
 from utils.file_test_recorder import FileTestRecorder
 from utils.env_config import get_env_config
-from utils.token_validator import validate_token_before_test
 
 # 配置日志
 logging.basicConfig(
@@ -51,9 +50,7 @@ def show_modules_and_test_cases():
 
         logger.info(f"✅ 使用项目 ID: {project_id[:8]}...")
 
-        # 使用 service_role key 绕过 RLS
-        service_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-        client = get_supabase_client(access_token=service_key)
+        client = get_supabase_client()
 
         # 获取模块统计
         module_stats = client.get_test_cases_by_module(project_id)
@@ -116,12 +113,10 @@ def get_user_selection(module_stats):
             logger.error(f"❌ 输入错误: {e}")
 
 
-def run_tests_and_save_to_json(selected_modules, execution_name, case_ids=None):
+def run_tests_and_save_to_json(selected_modules, execution_name):
     """运行测试并保存到 JSON 文件"""
     logger.info(f"\n🚀 开始执行测试: {execution_name}")
     logger.info(f"📋 选择的模块: {', '.join(selected_modules)}")
-    if case_ids:
-        logger.info(f"📋 指定的用例ID: {case_ids}")
 
     # 创建 JSON 文件路径并初始化记录器
     json_file = JsonTestRecorder.create_json_file(execution_name)
@@ -134,20 +129,10 @@ def run_tests_and_save_to_json(selected_modules, execution_name, case_ids=None):
     env['EXECUTION_NAME'] = execution_name
     env['DATA_SOURCE'] = 'supabase'  # 使用Supabase作为数据源
 
-    # 传递EXECUTION_ID给pytest进程（如果有）
-    execution_id = os.getenv("EXECUTION_ID")
-    if execution_id:
-        env['EXECUTION_ID'] = execution_id
-        logger.info(f"✅ EXECUTION_ID已传递: {execution_id[:8]}...")
-
     # 如果选择了特定模块，设置过滤
     if len(selected_modules) == 1:
         # 单个模块时设置过滤
         env['TARGET_MODULE'] = selected_modules[0]
-
-    # 如果指定了用例ID，设置过滤
-    if case_ids:
-        env['TARGET_CASE_IDS'] = case_ids
 
     logger.info(f"\n📋 执行命令: .venv/bin/python -m pytest utils/test_tarsight.py -v --alluredir=reports/allure-results --html=reports/test_report.html --self-contained-html")
     logger.info("=" * 60)
@@ -202,22 +187,15 @@ def import_json_to_supabase(json_file_path, project_id, execution_name):
     logger.info(f"\n📥 开始将 JSON 结果导入 Supabase...")
 
     try:
-        # 使用 service_role key 绕过 RLS
-        service_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-        client = get_supabase_client(access_token=service_key)
+        client = get_supabase_client()
 
-        # 检查是否已有执行记录（从前端API传入）
-        execution_id = os.getenv("EXECUTION_ID")
+        # 创建执行记录
+        execution_id = client.create_test_execution(project_id, execution_name)
+        if not execution_id:
+            logger.error("❌ 无法创建执行记录")
+            return False
 
-        if execution_id:
-            logger.info(f"✅ 使用已创建的执行记录: {execution_id[:8]}...")
-        else:
-            # 创建执行记录（手动执行模式）
-            execution_id = client.create_test_execution(project_id, execution_name)
-            if not execution_id:
-                logger.error("❌ 无法创建执行记录")
-                return False
-            logger.info(f"✅ 创建执行记录: {execution_id[:8]}...")
+        logger.info(f"✅ 创建执行记录: {execution_id[:8]}...")
 
         # 导入 JSON 结果
         success = client.import_json_results(execution_id, json_file_path)
@@ -246,42 +224,15 @@ def main():
         action="store_true",
         help="测试执行后不自动导入结果到Supabase"
     )
-    parser.add_argument(
-        "--all", "-a",
-        action="store_true",
-        help="自动运行所有模块的测试，跳过交互式选择"
-    )
-    parser.add_argument(
-        "--case-ids",
-        help="指定要执行的测试用例ID列表（用逗号分隔），例如: API001,API002"
-    )
-    parser.add_argument(
-        "--skip-token-check",
-        action="store_true",
-        help="跳过 API Token 验证（用于自动化执行场景）"
-    )
 
     args = parser.parse_args()
 
     logger.info("🔧 Tarsight 测试执行器 (新版工作流程)")
     logger.info("=" * 60)
 
-    # 0. 验证 API Token（除非指定跳过）
-    logger.info("")
-    if not args.skip_token_check:
-        if not validate_token_before_test():
-            logger.error("❌ API Token 无效，无法执行测试")
-            logger.info("💡 请更新 .env 文件中的 API_TOKEN 后重试")
-            return
-    else:
-        logger.info("⏭️  跳过 API Token 验证（自动化执行模式）")
-
-
     # 检查 Supabase 配置
     try:
-        # 使用 service_role key 绕过 RLS
-        service_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-        client = get_supabase_client(access_token=service_key)
+        client = get_supabase_client()
         logger.info(f"✅ Supabase 配置已找到: {client.supabase_url}")
     except Exception as e:
         logger.error(f"❌ Supabase 配置错误: {e}")
@@ -293,34 +244,15 @@ def main():
     if not project_id:
         return
 
-    # 2. 用户选择模块（如果使用 --all 参数，自动选择所有模块）
-    # 如果指定了 --case-ids，则自动选择所有模块
-    if args.case_ids:
-        selected_modules = list(module_stats.keys()) if module_stats else []
-        if selected_modules:
-            logger.info(f"\n✅ 指定了用例ID，自动选择所有模块")
-    elif args.all:
-        selected_modules = list(module_stats.keys()) if module_stats else []
-        if selected_modules:
-            logger.info(f"\n✅ 自动选择所有模块: {', '.join(selected_modules)}")
-    else:
-        selected_modules = get_user_selection(module_stats)
-
+    # 2. 用户选择模块
+    selected_modules = get_user_selection(module_stats)
     if not selected_modules:
         logger.info("👋 没有选择任何模块，退出")
         return
 
     # 3. 执行测试并保存到 JSON
     execution_name = args.name or f"测试执行 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-
-    # 检查EXECUTION_ID环境变量（调试）
-    execution_id_check = os.getenv("EXECUTION_ID")
-    if execution_id_check:
-        logger.info(f"🔑 主进程检测到EXECUTION_ID: {execution_id_check[:8]}...")
-    else:
-        logger.info(f"⚠️ 主进程未检测到EXECUTION_ID，将创建新记录")
-
-    json_file = run_tests_and_save_to_json(selected_modules, execution_name, case_ids=args.case_ids)
+    json_file = run_tests_and_save_to_json(selected_modules, execution_name)
 
     if not json_file:
         logger.error("❌ 测试执行失败或没有生成结果文件")

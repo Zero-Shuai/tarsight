@@ -15,42 +15,56 @@ async function getDashboardData() {
   const project = projects && projects.length > 0 ? projects[0] : null
   const actualProjectId = project?.id || projectId
 
-  const [moduleStats, recentExecutions, totalTestCases] = await Promise.all([
-    // 获取模块统计
-    supabase
-      .from('modules')
-      .select('name')
-      .eq('project_id', actualProjectId),
+  // 获取所有模块
+  const { data: modules } = await supabase
+    .from('modules')
+    .select('id, name')
+    .eq('project_id', actualProjectId)
 
-    // 获取最近的执行记录
-    supabase
-      .from('test_executions')
-      .select('*')
-      .eq('project_id', actualProjectId)
-      .order('started_at', { ascending: false })
-      .limit(5),
+  // 获取所有测试用例（用于统计）
+  const { data: testCases } = await supabase
+    .from('test_cases')
+    .select('module_id')
+    .eq('project_id', actualProjectId)
+    .eq('is_active', true)
 
-    // 获取测试用例总数
-    supabase
-      .from('test_cases')
-      .select('id', { count: 'exact', head: true })
-      .eq('project_id', actualProjectId)
-      .eq('is_active', true)
-  ])
+  // 获取测试用例总数
+  const { count: totalTestCasesCount } = await supabase
+    .from('test_cases')
+    .select('*', { count: 'exact', head: true })
+    .eq('project_id', actualProjectId)
+    .eq('is_active', true)
+
+  // 获取最近的执行记录
+  const { data: recentExecutions } = await supabase
+    .from('test_executions')
+    .select('*')
+    .eq('project_id', actualProjectId)
+    .order('started_at', { ascending: false })
+    .limit(5)
 
   // 计算模块统计
   const moduleStatsMap: Record<string, number> = {}
-  if (moduleStats.data) {
-    moduleStats.data.forEach((m: any) => {
-      moduleStatsMap[m.name] = (moduleStatsMap[m.name] || 0) + 1
+  if (modules) {
+    modules.forEach((m: any) => {
+      moduleStatsMap[m.name] = 0
+    })
+  }
+
+  if (testCases) {
+    testCases.forEach((tc: any) => {
+      const module = modules?.find((m: any) => m.id === tc.module_id)
+      if (module) {
+        moduleStatsMap[module.name]++
+      }
     })
   }
 
   return {
     project,
     moduleStats: moduleStatsMap,
-    recentExecutions: recentExecutions.data || [],
-    totalTestCases: totalTestCases.count || 0
+    recentExecutions: recentExecutions || [],
+    totalTestCases: totalTestCasesCount || 0
   }
 }
 

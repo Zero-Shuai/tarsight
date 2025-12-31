@@ -16,7 +16,11 @@ wheels/
 config_key.json
 
 # Reports
-/reports
+# 忽略报告内容但保留目录结构
+/reports/allure-results/
+/reports/test_results_*.json
+/reports/*.html
+/reports/shared_results.json
 /yaml
 
 # Sensitive configuration files
@@ -27,7 +31,6 @@ user_config.json
 # Logs and temporary files
 *.log
 *.tmp
-*.bak
 .DS_Store
 Thumbs.db
 

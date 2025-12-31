@@ -34,7 +34,8 @@ class TestExecutionRecorder:
     def __init__(self):
         """初始化记录器"""
         self.supabase_url = os.getenv('SUPABASE_URL')
-        self.supabase_key = os.getenv('SUPABASE_ANON_KEY')
+        # 优先使用 service_role key 绕过 RLS
+        self.supabase_key = os.getenv('SUPABASE_SERVICE_ROLE_KEY') or os.getenv('SUPABASE_ANON_KEY')
 
         self.enabled = bool(self.supabase_url and self.supabase_key)
         # 从环境变量获取 execution_id（如果有的话）
@@ -44,7 +45,8 @@ class TestExecutionRecorder:
         self.file_recorder = get_file_recorder()
 
         if self.enabled:
-            logger.info("✅ 测试执行记录器已启用 (Supabase)")
+            key_type = "service_role" if os.getenv('SUPABASE_SERVICE_ROLE_KEY') else "anon"
+            logger.info(f"✅ 测试执行记录器已启用 (Supabase, 使用 {key_type} key)")
             if self.execution_id:
                 logger.info(f"✅ 从环境变量获取执行ID: {self.execution_id[:8]}...")
         else:
@@ -58,29 +60,37 @@ class TestExecutionRecorder:
         try:
             import requests
 
-            # 获取 Tarsight 项目
-            projects_response = requests.get(
-                f"{self.supabase_url}/rest/v1/projects",
-                headers={
-                    'apikey': self.supabase_key,
-                    'Authorization': f'Bearer {self.supabase_key}',
-                    'Content-Type': 'application/json'
-                },
-                timeout=10
-            )
+            # 优先使用环境变量中的 TARGET_PROJECT
+            self.project_id = os.getenv('TARGET_PROJECT')
 
-            if projects_response.status_code != 200:
-                logger.error(f"❌ 获取项目失败: {projects_response.status_code}")
-                return None
+            if not self.project_id:
+                # 如果环境变量没有，尝试从 Supabase 查询
+                projects_response = requests.get(
+                    f"{self.supabase_url}/rest/v1/projects",
+                    headers={
+                        'apikey': self.supabase_key,
+                        'Authorization': f'Bearer {self.supabase_key}',
+                        'Content-Type': 'application/json'
+                    },
+                    timeout=10
+                )
 
-            projects = projects_response.json()
-            tarsight_project = next((p for p in projects if p['name'] == 'Tarsight'), None)
+                if projects_response.status_code != 200:
+                    logger.warning(f"⚠️ 无法从 Supabase 获取项目: {projects_response.status_code}")
+                    logger.warning("💡 请在 .env 中设置 TARGET_PROJECT 环境变量")
+                    return None
 
-            if not tarsight_project:
-                logger.error("❌ 未找到 Tarsight 项目")
-                return None
+                projects = projects_response.json()
+                tarsight_project = next((p for p in projects if p['name'] == 'Tarsight'), None)
 
-            self.project_id = tarsight_project['id']
+                if not tarsight_project:
+                    logger.warning("⚠️ Supabase 中未找到 'Tarsight' 项目")
+                    logger.warning("💡 请在 .env 中设置 TARGET_PROJECT 环境变量")
+                    return None
+
+                self.project_id = tarsight_project['id']
+            else:
+                logger.debug(f"✅ 使用环境变量中的项目 ID: {self.project_id[:8]}...")
 
             # 创建测试执行记录
             execution_data = {

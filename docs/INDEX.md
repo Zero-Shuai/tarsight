@@ -1,91 +1,59 @@
 # Tarsight 文档索引
 
-欢迎来到 Tarsight 文档中心!
+本索引提供所有项目文档的导航。
 
-## 📚 快速导航
+## 📚 文档分类
 
-### 入门指南
-- [主 README](../README.md) - 项目概述和快速开始
-- [项目结构](FINAL_STRUCTURE.md) - 详细的目录结构说明
+### 🚀 快速开始
+- **[主 README](../README.md)** - 项目概览和快速开始指南
+- **[快速参考](architecture/QUICK_REFERENCE.md)** - 常用命令和快速查找
 
-### 技术指南
-- [认证设置指南](guides/AUTHENTICATION_SETUP.md) - Supabase 认证配置
-- [登录修复记录](guides/LOGIN_FIX_COMPLETE.md) - 登录功能问题解决记录
+### 🏗️ 架构文档
+- **[架构分析](architecture/ARCHITECTURE_REVIEW.md)** - 完整的架构分析和问题识别
+- **[高优先级优化](architecture/ARCHITECTURE_OPTIMIZATION_COMPLETE.md)** - 高优先级优化报告
+- **[全面优化报告](architecture/FINAL_OPTIMIZATION_COMPLETE.md)** - 所有优化项目总结
 
-### 历史归档
-这些文档记录了项目的优化和重组过程:
+### 🔧 故障排查
+- **[故障排查索引](troubleshooting/INDEX.md)** - 常见问题快速入口
+- **[重复执行记录问题](troubleshooting/DUPLICATE_EXECUTION_FINAL_FIX.md)** - 重复记录问题解决
+- **[执行状态卡住问题](troubleshooting/EXECUTION_STATUS_SUMMARY.md)** - 执行卡住问题解决
+- **[Token 验证问题](troubleshooting/TOKEN_VALIDATION.md)** - API Token 验证
+- **[Service Role Key 问题](troubleshooting/SERVICE_ROLE_KEY_ISSUE.md)** - 权限配置
 
-- [清理报告](archive/PROJECT_CLEANUP_REPORT.md) - 项目清理建议
-- [重组完成记录](archive/PROJECT_REORGANIZATION_COMPLETE.md) - 项目重组总结
-- [清理待办事项](archive/TODO_CLEANUP.md) - 历史清理任务列表
-- [清理总结](archive/CLEANUP_SUMMARY.md) - 清理工作总结
+### 📖 项目结构
+- **[项目结构说明](FINAL_STRUCTURE.md)** - 详细的目录结构说明
 
-### 子项目文档
-- [后端文档](../supabase_version/README.md) - Python 后端详细文档
-- [前端文档](../tarsight-dashboard/README.md) - Next.js 前端详细文档
+### 🎯 指南和教程
+- **[认证设置指南](guides/AUTHENTICATION_SETUP.md)** - 用户认证配置
+- **[登录修复指南](guides/LOGIN_FIX_COMPLETE.md)** - 登录问题解决
+- **[数据库迁移指南](../supabase_version/docs/DATABASE_MIGRATION_GUIDE.md)** - 数据库迁移
 
-## 🎯 文档分类
+## 🎯 按场景查找文档
 
-### 活跃文档
-这些文档包含当前有效的信息:
-- README.md
-- FINAL_STRUCTURE.md
-- guides/ 目录下的所有文档
+### 我想...
 
-### 归档文档
-这些文档记录了历史过程,仅供参考:
-- archive/ 目录下的所有文档
+#### ...快速上手项目
+1. 阅读 [主 README](../README.md)
+2. 查看 [快速参考](architecture/QUICK_REFERENCE.md)
 
-## 📖 推荐阅读顺序
+#### ...了解项目架构
+1. 查看 [架构分析](architecture/ARCHITECTURE_REVIEW.md)
+2. 阅读 [项目结构说明](FINAL_STRUCTURE.md)
 
-### 新用户
-1. 阅读 [主 README](../README.md) 了解项目
-2. 阅读 [项目结构](FINAL_STRUCTURE.md) 理解架构
-3. 查看子项目文档:
-   - [后端 README](../supabase_version/README.md)
-   - [前端 README](../tarsight-dashboard/README.md)
+#### ...解决执行问题
+1. 查看 [故障排查索引](troubleshooting/INDEX.md)
+2. 根据具体问题查看对应文档
 
-### 开发者
-1. 完成新用户阅读流程
-2. 阅读 [认证设置指南](guides/AUTHENTICATION_SETUP.md)
-3. 参考具体子项目的开发文档
+#### ...优化代码质量
+1. 阅读 [架构分析](architecture/ARCHITECTURE_REVIEW.md)
+2. 查看 [优化报告](architecture/FINAL_OPTIMIZATION_COMPLETE.md)
 
-### 运维人员
-1. 了解项目架构和结构
-2. 查看部署相关文档:
-   - [前端部署](../tarsight-dashboard/deployment/)
-   - 后端部署详见后端 README
+## 📊 文档统计
 
-## 🔍 快速查找
-
-### 按主题查找
-
-**安装与配置**
-- [主 README - 快速开始](../README.md#快速开始)
-- [后端 README - 安装说明](../supabase_version/README.md)
-- [前端 README - 环境配置](../tarsight-dashboard/README.md)
-
-**开发指南**
-- [主 README - 开发指南](../README.md#开发指南)
-- [项目结构 - 数据库架构](FINAL_STRUCTURE.md#数据库)
-
-**故障排除**
-- [主 README - 常见问题](../README.md#常见问题)
-- [登录修复记录](guides/LOGIN_FIX_COMPLETE.md)
-
-## 📝 文档贡献
-
-如果发现文档有误或需要补充:
-1. Fork 项目
-2. 创建文档更新分支
-3. 提交 Pull Request
-
-## 🔗 外部资源
-
-- [Supabase 官方文档](https://supabase.com/docs)
-- [Next.js 官方文档](https://nextjs.org/docs)
-- [pytest 官方文档](https://docs.pytest.org/)
-
----
-
-**最后更新**: 2025-12-30
+| 分类 | 文档数量 | 位置 |
+|------|---------|------|
+| 快速开始 | 2 | 根目录 + architecture/ |
+| 架构文档 | 3 | architecture/ |
+| 故障排查 | 5 | troubleshooting/ |
+| 指南教程 | 3 | guides/ |
+| **总计** | **13** | - |

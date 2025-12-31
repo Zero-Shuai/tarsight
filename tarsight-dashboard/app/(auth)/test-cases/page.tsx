@@ -1,23 +1,37 @@
-import { supabase, api, TestCase } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Plus } from 'lucide-react'
+import Link from 'next/link'
+import { TestCaseList } from '@/components/test-case-list'
 
 async function getTestCases() {
+  const supabase = await createClient()
   const projectId = process.env.NEXT_PUBLIC_PROJECT_ID || '8786c21f-7437-4a2d-8486-9365a382b38e'
 
   const [testCases, modules] = await Promise.all([
-    api.getTestCases(projectId),
-    api.getModules(projectId)
+    supabase
+      .from('test_cases')
+      .select('*')
+      .eq('project_id', projectId)
+      .eq('is_active', true)
+      .order('case_id'),
+    supabase
+      .from('modules')
+      .select('*')
+      .eq('project_id', projectId)
+      .order('name')
   ])
 
-  const moduleMap = new Map(modules.map(m => [m.id, m.name]))
+  const moduleMap = new Map((modules.data || []).map(m => [m.id, m.name]))
 
   return {
-    testCases: testCases.map(tc => ({
+    testCases: (testCases.data || []).map(tc => ({
       ...tc,
       module_name: moduleMap.get(tc.module_id) || 'Unknown'
     })),
-    modules
+    modules: modules.data || []
   }
 }
 
@@ -35,9 +49,11 @@ export default async function TestCasesPage() {
 
   return (
     <div className="p-8 space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">测试用例</h1>
-        <p className="text-muted-foreground mt-2">管理所有测试用例</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">测试用例</h1>
+          <p className="text-muted-foreground mt-2">管理所有测试用例</p>
+        </div>
       </div>
 
       {/* 统计信息 */}
@@ -70,58 +86,12 @@ export default async function TestCasesPage() {
         </Card>
       </div>
 
-      {/* 测试用例列表 */}
-      <div className="space-y-6">
-        {Object.entries(groupedCases).map(([moduleName, cases]) => (
-          <Card key={moduleName}>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>{moduleName}</CardTitle>
-                  <CardDescription>{cases.length} 个测试用例</CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {cases.map((testCase) => (
-                  <div
-                    key={testCase.id}
-                    className="flex items-start justify-between border-b pb-3 last:border-0 last:pb-0"
-                  >
-                    <div className="space-y-1 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{testCase.case_id}</span>
-                        <Badge variant="outline">{testCase.method}</Badge>
-                        {testCase.is_active && (
-                          <Badge variant="default" className="bg-green-500">活跃</Badge>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground">{testCase.test_name}</p>
-                      <p className="text-xs text-muted-foreground font-mono">{testCase.url}</p>
-                      {testCase.description && (
-                        <p className="text-sm text-muted-foreground mt-1">{testCase.description}</p>
-                      )}
-                      {testCase.tags && testCase.tags.length > 0 && (
-                        <div className="flex gap-1 mt-2">
-                          {testCase.tags.map(tag => (
-                            <Badge key={tag} variant="secondary" className="text-xs">
-                              {tag}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    <div className="text-right text-sm text-muted-foreground">
-                      <p>预期: {testCase.expected_status}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {/* 传递数据给客户端组件 */}
+      <TestCaseList
+        groupedCases={groupedCases}
+        modules={modules}
+        initialTestCases={testCases}
+      />
     </div>
   )
 }

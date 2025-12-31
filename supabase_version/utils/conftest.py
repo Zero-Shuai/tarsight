@@ -68,9 +68,14 @@ def pytest_runtest_makereport(item, call):
         if not test_case:
             return
 
-        # 获取请求和响应信息
-        request_info = getattr(item, '_last_request_info', {})
-        response_info = getattr(item, '_last_response_info', {})
+        # 获取请求和响应信息 - 从测试实例中获取
+        # item.instance 是测试类的实例
+        request_info = {}
+        response_info = {}
+
+        if hasattr(item, 'instance') and item.instance:
+            request_info = getattr(item.instance, '_last_request_info', {})
+            response_info = getattr(item.instance, '_last_response_info', {})
 
         # 确定测试状态
         status = 'passed'
@@ -91,19 +96,8 @@ def pytest_runtest_makereport(item, call):
         elif hasattr(item, 'test_execution_time'):
             duration = item.test_execution_time
 
-        # 记录到JSON记录器（如果启用）
-        json_recorder = get_json_recorder()
-        if json_recorder and json_recorder.json_file_path:
-            json_recorder.add_test_result(
-                test_case=test_case,
-                request_info=request_info,
-                response_info=response_info,
-                status=status,
-                error_message=error_message,
-                duration=duration
-            )
-
         # 记录到Supabase记录器（如果启用）
+        # 注意：Supabase记录器会自动记录到JSON文件，所以这里不需要单独调用json_recorder
         if os.environ.get('SUPABASE_URL'):
             try:
                 recorder = get_test_recorder()

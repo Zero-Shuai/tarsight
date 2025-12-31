@@ -17,23 +17,36 @@ logger = logging.getLogger(__name__)
 class SupabaseClient:
     """Supabase 客户端"""
 
-    def __init__(self, access_token: Optional[str] = None):
+    def __init__(self, access_token: Optional[str] = None, use_service_role: bool = True):
         """
         初始化客户端
 
         Args:
             access_token: 用户访问令牌（可选，用于 RLS）
+            use_service_role: 是否使用 service_role key（默认True，绕过 RLS）
         """
         env_config = get_env_config()
 
         self.supabase_url = env_config.supabase_url
         self.supabase_key = env_config.supabase_anon_key
+        self.service_key = env_config.supabase_service_role_key
 
-        # 如果提供了 access_token，使用它；否则使用 anon_key
-        token = access_token or self.supabase_key
+        # 优先使用 service_role key（绕过 RLS），其次使用提供的 token，最后使用 anon_key
+        if use_service_role and self.service_key:
+            token = self.service_key
+            logger.info(f"✅ 使用 service_role key（绕过 RLS）: {token[:20]}...")
+        elif access_token:
+            token = access_token
+            logger.debug("使用用户 access_token")
+        else:
+            token = self.supabase_key
+            logger.debug("使用 anon key")
+
+        # 对于 service_role，使用 service_key 作为 apikey
+        apikey = self.service_key if (use_service_role and self.service_key) else self.supabase_key
 
         self.headers = {
-            'apikey': self.supabase_key,
+            'apikey': apikey,
             'Authorization': f'Bearer {token}',
             'Content-Type': 'application/json'
         }

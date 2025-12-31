@@ -56,6 +56,13 @@ class TestTarsightTable:
         if target_module and module_name != target_module:
             pytest.skip(f"跳过非目标模块 '{target_module}' 的测试用例")
 
+        # 检查是否需要按用例ID过滤（通过环境变量）
+        target_case_ids = os.environ.get('TARGET_CASE_IDS')
+        if target_case_ids:
+            target_ids = [cid.strip() for cid in target_case_ids.split(',')]
+            if case_id not in target_ids:
+                pytest.skip(f"跳过非指定用例ID '{case_id}' 的测试")
+
         allure.dynamic.title(f"[{module_name}] {case_id} - {test_case['test_name']}")
         allure.dynamic.description(test_case['description'])
         allure.dynamic.tag(*test_case['tags'], module_name)
