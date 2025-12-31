@@ -9,6 +9,7 @@ import Link from 'next/link'
 import { TestCaseForm } from './test-case-form'
 import { TestCaseActions } from './test-case-actions'
 import { supabase as supabaseClient } from '@/lib/supabase/client'
+import type { TestCase, Module } from '@/lib/types/database'
 
 interface TestCaseListProps {
   groupedCases: Record<string, TestCase[]>
