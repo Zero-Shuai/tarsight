@@ -132,30 +132,50 @@ export default function ProjectsPage() {
     setValidationMessage('正在检测 Token 有效性...')
 
     try {
-      // 调用一个简单的 API 接口来验证 Token
-      const response = await fetch(`${config.base_url}/api/health`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${config.api_token}`,
-          'Content-Type': 'application/json'
-        },
-        signal: AbortSignal.timeout(10000) // 10秒超时
-      })
+      // 尝试多个端点来验证 Token（优先级从高到低）
+      const endpoints = [
+        '/api/health',
+        '/api/user',
+        '/api/me',
+        '/api/projects',
+        '/api/v1/health',
+        '/health',
+      ]
 
-      if (response.ok) {
-        setValidationStatus('valid')
-        setValidationMessage('✅ Token 有效，可以正常使用')
-      } else if (response.status === 401) {
-        setValidationStatus('invalid')
-        setValidationMessage('❌ Token 无效或已过期，请检查后重新输入')
-      } else if (response.status === 404) {
-        // 如果 404，尝试其他可能的端点
-        setValidationStatus('idle')
-        setValidationMessage('⚠️ 无法确定 Token 有效性（健康检查端点不存在），建议保存后实际测试')
-      } else {
-        setValidationStatus('invalid')
-        setValidationMessage(`❌ Token 验证失败，状态码: ${response.status}`)
+      let lastError: any = null
+
+      for (const endpoint of endpoints) {
+        try {
+          const response = await fetch(`${config.base_url}${endpoint}`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${config.api_token}`,
+              'Content-Type': 'application/json'
+            },
+            signal: AbortSignal.timeout(5000) // 每个端点5秒超时
+          })
+
+          if (response.ok) {
+            setValidationStatus('valid')
+            setValidationMessage(`✅ Token 有效，验证通过（端点: ${endpoint}）`)
+            return
+          } else if (response.status === 401) {
+            setValidationStatus('invalid')
+            setValidationMessage('❌ Token 无效或已过期，请检查后重新输入')
+            return
+          }
+          // 其他状态码，继续尝试下一个端点
+          lastError = `状态码: ${response.status}`
+        } catch (err: any) {
+          // 网络错误或超时，继续尝试下一个端点
+          lastError = err.message
+          continue
+        }
       }
+
+      // 所有端点都失败了
+      setValidationStatus('idle')
+      setValidationMessage(`⚠️ 无法确定 Token 有效性（所有验证端点均不可用: ${endpoints.join(', ')}），建议保存后实际测试验证`)
     } catch (error: any) {
       if (error.name === 'AbortError') {
         setValidationStatus('invalid')
