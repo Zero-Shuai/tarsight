@@ -100,7 +100,7 @@ export function TestCaseList({ groupedCases, modules, initialTestCases }: TestCa
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <span className="font-medium">{testCase.case_id}</span>
-                          <Badge variant="outline">{testCase.method}</Badge>
+                          <Badge variant="outline">{testCase.api_method}</Badge>
                           {testCase.is_active && (
                             <Badge variant="default" className="bg-green-500">活跃</Badge>
                           )}
