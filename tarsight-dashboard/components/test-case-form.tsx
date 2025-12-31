@@ -29,7 +29,7 @@ export function TestCaseForm({ testCase, modules, onSuccess, onCancel }: TestCas
     module_id: testCase?.module_id || '',
     tags: testCase?.tags || [],
     headers: testCase?.headers || {},
-    body: testCase?.body || {},
+    request_body: testCase?.request_body || {},
     level: testCase?.level || 'P2',
     is_active: testCase?.is_active !== undefined ? testCase.is_active : true
   })

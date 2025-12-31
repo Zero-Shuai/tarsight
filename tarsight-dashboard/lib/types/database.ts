@@ -39,7 +39,7 @@ export type TestCase = {
   url: string
   expected_status: number
   headers?: Record<string, string>
-  body?: Record<string, any>
+  request_body?: Record<string, any>
   variables?: Record<string, any>
   tags?: string[]
   level: string
@@ -125,7 +125,7 @@ export type TestCaseFormData = {
   url: string
   expected_status: number
   headers?: Record<string, string>
-  body?: Record<string, any>
+  request_body?: Record<string, any>
   variables?: Record<string, any>
   tags?: string[]
   level: string
