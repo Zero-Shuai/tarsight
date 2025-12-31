@@ -19,6 +19,18 @@ interface TestCaseFormProps {
 
 export function TestCaseForm({ testCase, modules, onSuccess, onCancel }: TestCaseFormProps) {
   const [loading, setLoading] = useState(false)
+
+  // 解析从数据库读取的 JSON 字符串字段
+  const parseJsonField = (field: any) => {
+    if (!field) return {}
+    if (typeof field === 'object') return field
+    try {
+      return JSON.parse(field)
+    } catch {
+      return {}
+    }
+  }
+
   const [formData, setFormData] = useState({
     case_id: testCase?.case_id || '',
     test_name: testCase?.test_name || '',
@@ -28,8 +40,9 @@ export function TestCaseForm({ testCase, modules, onSuccess, onCancel }: TestCas
     description: testCase?.description || '',
     module_id: testCase?.module_id || '',
     tags: testCase?.tags || [],
-    headers: testCase?.headers || {},
-    request_body: testCase?.request_body || {},
+    headers: parseJsonField(testCase?.headers),
+    request_body: parseJsonField(testCase?.request_body),
+    variables: parseJsonField(testCase?.variables),
     level: testCase?.level || 'P2',
     is_active: testCase?.is_active !== undefined ? testCase.is_active : true
   })
@@ -40,15 +53,29 @@ export function TestCaseForm({ testCase, modules, onSuccess, onCancel }: TestCas
     setLoading(true)
 
     try {
+      // 处理数据：将对象字段转换为 JSON 字符串
+      const processedFormData = {
+        ...formData,
+        headers: typeof formData.headers === 'string'
+          ? formData.headers
+          : JSON.stringify(formData.headers || {}),
+        request_body: typeof formData.request_body === 'string'
+          ? formData.request_body
+          : JSON.stringify(formData.request_body || {}),
+        variables: formData.variables
+          ? (typeof formData.variables === 'string' ? formData.variables : JSON.stringify(formData.variables))
+          : null
+      }
+
       const { error } = testCase
         ? await supabaseClient
             .from('test_cases')
-            .update(formData)
+            .update(processedFormData)
             .eq('id', testCase.id)
         : await supabaseClient
             .from('test_cases')
             .insert({
-              ...formData,
+              ...processedFormData,
               project_id: process.env.NEXT_PUBLIC_PROJECT_ID
             })
 
