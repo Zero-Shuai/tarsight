@@ -214,7 +214,7 @@ export default function ProjectsPage() {
                 />
                 <Button
                   variant="outline"
-                  size="icon"
+                  size="sm"
                   onClick={() => setShowToken(!showToken)}
                   title={showToken ? '隐藏' : '显示'}
                 >

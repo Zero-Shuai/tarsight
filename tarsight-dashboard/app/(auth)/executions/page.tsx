@@ -4,13 +4,23 @@ import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
 
 function formatDate(dateString: string): string {
+  // 确保使用中国时区 (UTC+8)
   const date = new Date(dateString)
+
+  // 检查是否是有效的日期
+  if (isNaN(date.getTime())) {
+    return '无效时间'
+  }
+
   return date.toLocaleString('zh-CN', {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+    timeZone: 'Asia/Shanghai'
   })
 }
 
