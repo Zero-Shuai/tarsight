@@ -158,7 +158,7 @@ export default async function TestCaseDetailPage({
               <div className="md:col-span-2">
                 <p className="text-sm text-muted-foreground">标签</p>
                 <div className="flex gap-1 mt-1">
-                  {testCase.tags.map(tag => (
+                  {testCase.tags.map((tag: string) => (
                     <Badge key={tag} variant="secondary" className="text-xs">
                       {tag}
                     </Badge>
