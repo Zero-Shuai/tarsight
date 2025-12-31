@@ -67,60 +67,60 @@ services:
         max-file: "3"
 
   # ==========================================
-  # Python 后端服务（测试执行环境）
+  # Python 后端服务（已弃用 - Python 环境已集成到前端）
   # ==========================================
-  backend:
-    build:
-      context: ./supabase_version
-      dockerfile: Dockerfile
-      target: production
-    container_name: tarsight-backend
-    restart: unless-stopped
-    environment:
-      # Supabase 配置
-      - SUPABASE_URL=${SUPABASE_URL:-https://your-project.supabase.co}
-      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
-      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
-      # 项目配置
-      - TARGET_PROJECT=${TARGET_PROJECT:-8786c21f-7437-4a2d-8486-9365a382b38e}
-      # API 测试配置
-      - BASE_URL=${BASE_URL:-https://t-stream-iq.tarsv.com}
-      - API_TOKEN=${API_TOKEN}
-      # 数据源配置
-      - DATA_SOURCE=${DATA_SOURCE:-supabase}
-      # 日志配置
-      - LOG_LEVEL=${LOG_LEVEL:-INFO}
-      - JSON_RECORDING=${JSON_RECORDING:-true}
-      - REPORTS_DIR=/app/reports
-    volumes:
-      # 挂载 Python 代码到前端容器（用于执行测试）
-      - python-code:/app:ro
-      # 挂载测试报告目录
-      - test-reports:/app/reports
-    networks:
-      - tarsight-network
-    # 健康检查
-    healthcheck:
-      test: ["CMD", "python", "-c", "import sys; sys.exit(0)"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-    # 资源限制
-    deploy:
-      resources:
-        limits:
-          cpus: '2.0'
-          memory: 2G
-        reservations:
-          cpus: '0.5'
-          memory: 512M
-    # 日志配置
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+  # backend:
+  #   build:
+  #     context: ./supabase_version
+  #     dockerfile: Dockerfile
+  #     target: production
+  #   container_name: tarsight-backend
+  #   restart: unless-stopped
+  #   environment:
+  #     # Supabase 配置
+  #     - SUPABASE_URL=${SUPABASE_URL:-https://your-project.supabase.co}
+  #     - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+  #     - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+  #     # 项目配置
+  #     - TARGET_PROJECT=${TARGET_PROJECT:-8786c21f-7437-4a2d-8486-9365a382b38e}
+  #     # API 测试配置
+  #     - BASE_URL=${BASE_URL:-https://t-stream-iq.tarsv.com}
+  #     - API_TOKEN=${API_TOKEN}
+  #     # 数据源配置
+  #     - DATA_SOURCE=${DATA_SOURCE:-supabase}
+  #     # 日志配置
+  #     - LOG_LEVEL=${LOG_LEVEL:-INFO}
+  #     - JSON_RECORDING=${JSON_RECORDING:-true}
+  #     - REPORTS_DIR=/app/reports
+  #   volumes:
+  #     # 挂载 Python 代码到前端容器（用于执行测试）
+  #     - python-code:/app:ro
+  #     # 挂载测试报告目录
+  #     - test-reports:/app/reports
+  #   networks:
+  #     - tarsight-network
+  #   # 健康检查
+  #   healthcheck:
+  #     test: ["CMD", "python", "-c", "import sys; sys.exit(0)"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 10s
+  #   # 资源限制
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: '2.0'
+  #         memory: 2G
+  #       reservations:
+  #         cpus: '0.5'
+  #         memory: 512M
+  #   # 日志配置
+  #   logging:
+  #     driver: "json-file"
+  #     options:
+  #       max-size: "10m"
+  #       max-file: "3"
 
 # ==========================================
 # 网络配置
@@ -133,10 +133,10 @@ networks:
 # ==========================================
 # 数据卷配置
 # ==========================================
-volumes:
-  # Python 代码卷（只读挂载到前端）
-  python-code:
-    driver: local
-  # 测试报告卷
-  test-reports:
-    driver: local
+# volumes:
+#   # Python 代码卷（只读挂载到前端）- 已弃用
+#   python-code:
+#     driver: local
+#   # 测试报告卷 - 已弃用
+#   test-reports:
+#     driver: local
