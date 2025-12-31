@@ -1,0 +1,136 @@
+# Tarsight 完整部署配置 - 前端 + 后端
+# 版本: 1.0
+# 说明: 包含 Next.js 前端和 Python 后端的完整 Docker 编排配置
+
+services:
+  # ==========================================
+  # Next.js 前端服务
+  # ==========================================
+  frontend:
+    build:
+      context: ./tarsight-dashboard
+      dockerfile: deployment/Dockerfile
+      # 传递构建参数（Next.js 构建时需要这些环境变量）
+      args:
+        - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+        - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+        - NEXT_PUBLIC_PROJECT_ID=${NEXT_PUBLIC_PROJECT_ID}
+        - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+    container_name: tarsight-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=production
+      # 运行时环境变量
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      - NEXT_PUBLIC_PROJECT_ID=${NEXT_PUBLIC_PROJECT_ID:-8786c21f-7437-4a2d-8486-9365a382b38e}
+      # 服务端密钥（用于 API 路由）
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      # Python 测试执行环境配置
+      - PROJECT_ROOT=/app/python
+      - PYTHON_PATH=/usr/bin/python3
+    networks:
+      - tarsight-network
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      - backend
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    # 日志配置
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ==========================================
+  # Python 后端服务（测试执行环境）
+  # ==========================================
+  backend:
+    build:
+      context: ./supabase_version
+      dockerfile: Dockerfile
+      target: production
+    container_name: tarsight-backend
+    restart: unless-stopped
+    environment:
+      # Supabase 配置
+      - SUPABASE_URL=${SUPABASE_URL:-https://your-project.supabase.co}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      # 项目配置
+      - TARGET_PROJECT=${TARGET_PROJECT:-8786c21f-7437-4a2d-8486-9365a382b38e}
+      # API 测试配置
+      - BASE_URL=${BASE_URL:-https://t-stream-iq.tarsv.com}
+      - API_TOKEN=${API_TOKEN}
+      # 数据源配置
+      - DATA_SOURCE=${DATA_SOURCE:-supabase}
+      # 日志配置
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - JSON_RECORDING=${JSON_RECORDING:-true}
+      - REPORTS_DIR=/app/reports
+    volumes:
+      # 挂载 Python 代码到前端容器（用于执行测试）
+      - python-code:/app:ro
+      # 挂载测试报告目录
+      - test-reports:/app/reports
+    networks:
+      - tarsight-network
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys; sys.exit(0)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    # 日志配置
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# ==========================================
+# 网络配置
+# ==========================================
+networks:
+  tarsight-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+# ==========================================
+# 数据卷配置
+# ==========================================
+volumes:
+  # Python 代码卷（只读挂载到前端）
+  python-code:
+    driver: local
+  # 测试报告卷
+  test-reports:
+    driver: local
