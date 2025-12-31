@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { exec } from 'child_process'
-import { promisify } from 'util'
-import { retryAsync, sleep, logError, ExecutionError } from '@/lib/utils/error-handler'
-
-const execAsync = promisify(exec)
+import { executionQueue } from '@/lib/test-execution-queue'
+import { logError } from '@/lib/utils/error-handler'
 
 /**
  * 统一的测试执行 API
@@ -92,18 +89,32 @@ export async function POST(request: NextRequest) {
     console.log('执行名称:', executionName)
     console.log('执行命令:', command)
 
-    // 异步执行测试（不等待，让它在后台运行）
-    console.log('准备调用 executeTestAsync...')
-    executeTestAsync(command, execution.id, projectRoot, supabase).catch(err => {
-      console.error('异步测试执行出错:', err)
+    // 获取队列状态
+    const queueStatus = executionQueue.getStatus()
+    console.log('当前队列状态:', queueStatus)
+
+    // 使用执行队列异步执行测试（自动控制并发数）
+    console.log('提交任务到执行队列...')
+    executionQueue.enqueue(command, execution.id).catch(err => {
+      console.error('队列执行出错:', err)
+      logError('TestExecutionQueue', err, {
+        executionId: execution.id,
+        message: '执行队列中的任务失败'
+      })
     })
-    console.log('executeTestAsync 已调用（不等待结果）')
+    console.log('任务已加入队列（队列中任务数:', queueStatus.queued + 1, '）')
 
     return NextResponse.json({
       success: true,
       execution_id: execution.id,
       mode: mode,
-      message: mode === 'simple' ? '测试已提交执行（简化模式）' : '测试已提交执行，请稍后查看执行历史'
+      queue_status: {
+        running: queueStatus.running,
+        queued: queueStatus.queued + 1
+      },
+      message: mode === 'simple'
+        ? `测试已加入队列（简化模式），当前排队: ${queueStatus.queued + 1}`
+        : `测试已加入队列，请稍后查看执行历史。当前排队: ${queueStatus.queued + 1}`
     })
 
   } catch (error: any) {
@@ -112,87 +123,5 @@ export async function POST(request: NextRequest) {
       { error: '执行测试失败: ' + error.message },
       { status: 500 }
     )
-  }
-}
-
-/**
- * 异步执行测试命令（带重试机制）
- */
-async function executeTestAsync(
-  command: string,
-  executionId: string,
-  projectRoot: string,
-  supabase: any
-) {
-  try {
-    console.log('=== 开始异步执行测试 ===')
-    console.log('执行命令:', command)
-    console.log('工作目录:', projectRoot)
-    console.log('执行ID:', executionId)
-
-    // 使用重试机制执行命令
-    const { stdout, stderr } = await retryAsync(
-      async () => {
-        const result = await execAsync(command, {
-          env: {
-            ...process.env,
-            PYTHONPATH: projectRoot,
-            NODE_ENV: process.env.NODE_ENV,
-            EXECUTION_ID: executionId,
-            TARSIGHT_EXECUTION_ID: executionId
-          },
-          timeout: 300000 // 5分钟超时
-        })
-        console.log('=== Python 执行输出 ===')
-        console.log('STDOUT:', result.stdout)
-        if (result.stderr) {
-          console.log('STDERR:', result.stderr)
-        }
-        return result
-      },
-      {
-        maxRetries: 2, // 最多重试2次
-        delay: 2000,   // 初始延迟2秒
-        backoff: true, // 指数退避
-        onRetry: (error, attempt) => {
-          console.error(`第 ${attempt} 次重试...`, error)
-          logError('TestExecution', error, {
-            executionId,
-            attempt,
-            message: `测试执行失败，正在进行第 ${attempt} 次重试...`
-          })
-        }
-      }
-    )
-
-    console.log('=== 测试执行完成 ===')
-    console.log('最终输出:', stdout)
-
-  } catch (err: any) {
-    // 所有重试都失败，记录错误并更新状态
-    console.error('=== 测试执行失败 ===')
-    console.error('错误信息:', err.message)
-    console.error('错误堆栈:', err.stack)
-    logError('TestExecution', err, {
-      executionId,
-      message: '测试执行失败，已达到最大重试次数'
-    })
-
-    // 更新执行状态为失败
-    try {
-      await supabase
-        .from('test_executions')
-        .update({
-          status: 'failed',
-          completed_at: new Date().toISOString()
-        })
-        .eq('id', executionId)
-      console.log('已更新执行状态为失败')
-    } catch (updateErr) {
-      logError('DatabaseUpdate', updateErr, {
-        executionId,
-        message: '更新执行状态失败'
-      })
-    }
   }
 }
