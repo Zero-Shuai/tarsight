@@ -177,7 +177,7 @@ export default async function TestCaseDetailPage({
             <CardTitle className="text-sm font-medium">总执行次数</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{statistics.totalRuns}</div>
+            <div className="text-2xl font-bold">{statistics?.totalRuns || 0}</div>
           </CardContent>
         </Card>
 
@@ -186,9 +186,9 @@ export default async function TestCaseDetailPage({
             <CardTitle className="text-sm font-medium text-green-600">通过次数</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{statistics.passedRuns}</div>
+            <div className="text-2xl font-bold text-green-600">{statistics?.passedRuns || 0}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              {statistics.passRate.toFixed(1)}%
+              {statistics?.passRate?.toFixed(1) || '0.0'}%
             </p>
           </CardContent>
         </Card>
@@ -198,9 +198,9 @@ export default async function TestCaseDetailPage({
             <CardTitle className="text-sm font-medium text-red-600">失败次数</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{statistics.failedRuns}</div>
+            <div className="text-2xl font-bold text-red-600">{statistics?.failedRuns || 0}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              {statistics.totalRuns > 0 ? ((statistics.failedRuns / statistics.totalRuns) * 100).toFixed(1) : 0}%
+              {(statistics?.totalRuns || 0) > 0 ? (((statistics?.failedRuns || 0) / (statistics?.totalRuns || 1)) * 100).toFixed(1) : '0.0'}%
             </p>
           </CardContent>
         </Card>
@@ -210,7 +210,7 @@ export default async function TestCaseDetailPage({
             <CardTitle className="text-sm font-medium text-yellow-600">跳过次数</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{statistics.skippedRuns}</div>
+            <div className="text-2xl font-bold text-yellow-600">{statistics?.skippedRuns || 0}</div>
           </CardContent>
         </Card>
       </div>
