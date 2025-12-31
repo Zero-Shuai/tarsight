@@ -58,8 +58,9 @@ export async function POST(request: NextRequest) {
 
     // 获取环境配置
     const projectRoot = process.env.PROJECT_ROOT || '/Users/zhangshuai/WorkSpace/Tarsight/supabase_version'
-    const pythonCmd = process.env.PYTHON_PATH || `${projectRoot}/.venv/bin/python`
-    const venvExists = require('fs').existsSync(pythonCmd)
+    const pythonCmd = process.env.PYTHON_PATH || 'python3'
+    // 检查 Python 是否可用（支持虚拟环境和系统 Python）
+    const venvExists = require('fs').existsSync(pythonCmd) || pythonCmd === 'python3' || pythonCmd === '/usr/bin/python3'
 
     // 构建测试用例参数
     const testCaseArgs = case_ids || testCases.map(tc => tc.case_id)
