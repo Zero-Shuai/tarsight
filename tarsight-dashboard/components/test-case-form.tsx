@@ -30,6 +30,7 @@ export function TestCaseForm({ testCase, modules, onSuccess, onCancel }: TestCas
     tags: testCase?.tags || [],
     headers: testCase?.headers || {},
     body: testCase?.body || {},
+    level: testCase?.level || 'P2',
     is_active: testCase?.is_active !== undefined ? testCase.is_active : true
   })
   const [newTag, setNewTag] = useState('')
@@ -124,7 +125,7 @@ export function TestCaseForm({ testCase, modules, onSuccess, onCancel }: TestCas
             />
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-3">
             <div>
               <Label htmlFor="method">请求方法 *</Label>
               <select
@@ -139,6 +140,22 @@ export function TestCaseForm({ testCase, modules, onSuccess, onCancel }: TestCas
                 <option value="PUT">PUT</option>
                 <option value="DELETE">DELETE</option>
                 <option value="PATCH">PATCH</option>
+              </select>
+            </div>
+
+            <div>
+              <Label htmlFor="level">用例等级 *</Label>
+              <select
+                id="level"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={formData.level}
+                onChange={(e) => setFormData({ ...formData, level: e.target.value })}
+                required
+              >
+                <option value="P0">P0 - 最高优先级</option>
+                <option value="P1">P1 - 高优先级</option>
+                <option value="P2">P2 - 中优先级</option>
+                <option value="P3">P3 - 低优先级</option>
               </select>
             </div>
 

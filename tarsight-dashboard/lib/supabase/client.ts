@@ -109,6 +109,7 @@ export interface TestCase {
   headers: Record<string, string>
   variables: Record<string, any>
   tags: string[]
+  level: string
   is_active: boolean
   created_at: string
 }

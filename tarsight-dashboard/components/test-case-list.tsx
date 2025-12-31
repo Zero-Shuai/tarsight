@@ -98,15 +98,21 @@ export function TestCaseList({ groupedCases, modules, initialTestCases }: TestCa
                       className="flex-1 hover:bg-muted/50 transition-colors -mx-2 px-2 rounded py-1"
                     >
                       <div className="space-y-1">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-medium">{testCase.case_id}</span>
-                          <Badge variant="outline">{testCase.api_method}</Badge>
+                          <Badge variant="outline">{testCase.method}</Badge>
+                          <Badge
+                            variant={testCase.level === 'P0' ? 'destructive' : testCase.level === 'P1' ? 'default' : 'secondary'}
+                            className={testCase.level === 'P0' ? 'bg-red-500' : testCase.level === 'P1' ? 'bg-orange-500' : ''}
+                          >
+                            {testCase.level || 'P2'}
+                          </Badge>
                           {testCase.is_active && (
                             <Badge variant="default" className="bg-green-500">活跃</Badge>
                           )}
                         </div>
                         <p className="text-sm text-muted-foreground">{testCase.test_name}</p>
-                        <p className="text-xs text-muted-foreground font-mono">{testCase.api_method} {testCase.api_path}</p>
+                        <p className="text-xs text-muted-foreground font-mono">{testCase.method} {testCase.url}</p>
                       </div>
                     </Link>
 
