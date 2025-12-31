@@ -32,6 +32,13 @@ services:
       - PROJECT_ROOT=/app/python
       - PYTHON_PATH=/usr/bin/python3
       - PYTHONPATH=/app/python
+      # Supabase Python 客户端配置
+      - SUPABASE_URL=${SUPABASE_URL:-https://your-project.supabase.co}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - TARGET_PROJECT=${NEXT_PUBLIC_PROJECT_ID:-8786c21f-7437-4a2d-8486-9365a382b38e}
+      # API 测试配置
+      - BASE_URL=${BASE_URL:-https://t-stream-iq.tarsv.com}
+      - API_TOKEN=${API_TOKEN}
     networks:
       - tarsight-network
     # 健康检查
