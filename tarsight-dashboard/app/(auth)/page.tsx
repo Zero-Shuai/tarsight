@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ListChecks, TrendingUp, Clock, AlertCircle } from 'lucide-react'
+import Link from 'next/link'
 
 async function getDashboardData() {
   const supabase = await createClient()
@@ -144,40 +145,42 @@ export default async function HomePage() {
       </div>
 
       {/* 模块分布 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>模块分布</CardTitle>
-          <CardDescription>各模块测试用例数量</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {Object.entries(moduleStats).map(([module, count]) => (
-              <div key={module} className="flex items-center justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-medium">{module}</span>
-                    <span className="text-sm text-muted-foreground">{count} 个用例</span>
-                  </div>
-                  <div className="w-full bg-secondary rounded-full h-2">
-                    <div
-                      className="bg-primary h-2 rounded-full transition-all"
-                      style={{
-                        width: `${(count / Math.max(...Object.values(moduleStats))) * 100}%`
-                      }}
-                    />
+      <Link href="/modules">
+        <Card className="cursor-pointer hover:shadow-md transition-shadow">
+          <CardHeader>
+            <CardTitle>模块分布</CardTitle>
+            <CardDescription>各模块测试用例数量（点击查看模块管理）</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {Object.entries(moduleStats).map(([module, count]) => (
+                <div key={module} className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-medium">{module}</span>
+                      <span className="text-sm text-muted-foreground">{count} 个用例</span>
+                    </div>
+                    <div className="w-full bg-secondary rounded-full h-2">
+                      <div
+                        className="bg-primary h-2 rounded-full transition-all"
+                        style={{
+                          width: `${(count / Math.max(...Object.values(moduleStats))) * 100}%`
+                        }}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </Link>
 
       {/* 最近执行 */}
       <Card>
         <CardHeader>
           <CardTitle>最近执行</CardTitle>
-          <CardDescription>最近的测试执行记录</CardDescription>
+          <CardDescription>最近的测试执行记录（点击查看详情）</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -187,27 +190,29 @@ export default async function HomePage() {
                 : 0
 
               return (
-                <div key={execution.id} className="flex items-center justify-between border-b pb-4 last:border-0">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium leading-none">{execution.execution_name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(execution.started_at).toLocaleString('zh-CN')}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="text-right">
-                      <p className="text-sm font-medium">{passRate.toFixed(1)}%</p>
-                      <p className="text-xs text-muted-foreground">
-                        {execution.passed_tests}/{execution.total_tests} 通过
+                <Link key={execution.id} href={`/executions/${execution.id}`}>
+                  <div className="flex items-center justify-between border-b pb-4 last:border-0 cursor-pointer hover:bg-muted/50 -mx-2 px-2 rounded py-2 transition-colors">
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium leading-none">{execution.execution_name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(execution.started_at).toLocaleString('zh-CN')}
                       </p>
                     </div>
-                    <div className={`h-2 w-2 rounded-full ${
-                      execution.status === 'completed' ? 'bg-green-500' :
-                      execution.status === 'failed' ? 'bg-red-500' :
-                      'bg-blue-500'
-                    }`} />
+                    <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <p className="text-sm font-medium">{passRate.toFixed(1)}%</p>
+                        <p className="text-xs text-muted-foreground">
+                          {execution.passed_tests}/{execution.total_tests} 通过
+                        </p>
+                      </div>
+                      <div className={`h-2 w-2 rounded-full ${
+                        execution.status === 'completed' ? 'bg-green-500' :
+                        execution.status === 'failed' ? 'bg-red-500' :
+                        'bg-blue-500'
+                      }`} />
+                    </div>
                   </div>
-                </div>
+                </Link>
               )
             })}
             {recentExecutions.length === 0 && (

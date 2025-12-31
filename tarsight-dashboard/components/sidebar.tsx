@@ -10,6 +10,7 @@ import {
   BarChart3,
   Settings,
   Key,
+  FolderOpen,
 } from 'lucide-react'
 import { UserMenu } from '@/components/user-menu'
 
@@ -18,6 +19,11 @@ const navItems = [
     title: '总览',
     href: '/',
     icon: LayoutDashboard,
+  },
+  {
+    title: '模块管理',
+    href: '/modules',
+    icon: FolderOpen,
   },
   {
     title: '测试用例',
