@@ -1,4 +1,5 @@
 import { spawn } from 'child_process'
+import { createClient } from '@/lib/supabase/server'
 
 export interface QueueTask {
   executionId: string
@@ -7,24 +8,103 @@ export interface QueueTask {
   reject: (error: Error) => void
 }
 
+export interface QueueConfig {
+  maxConcurrent: number
+  timeoutMinutes: number
+  enabled: boolean
+}
+
+/**
+ * 从 Supabase 加载队列配置
+ */
+async function loadQueueConfig(): Promise<QueueConfig> {
+  try {
+    const supabase = await createClient()
+    const projectId = process.env.NEXT_PUBLIC_PROJECT_ID
+
+    const { data: configs } = await supabase
+      .from('queue_config')
+      .select('key, value')
+      .eq('project_id', projectId)
+
+    if (!configs) {
+      console.warn('未找到队列配置，使用默认值')
+      return {
+        maxConcurrent: 2,
+        timeoutMinutes: 10,
+        enabled: true
+      }
+    }
+
+    const configMap = Object.fromEntries(
+      configs.map(c => [c.key, c.value])
+    )
+
+    return {
+      maxConcurrent: parseInt(configMap.max_concurrent || '2'),
+      timeoutMinutes: parseInt(configMap.timeout_minutes || '10'),
+      enabled: configMap.queue_enabled === 'true'
+    }
+  } catch (error) {
+    console.error('加载队列配置失败，使用默认值:', error)
+    return {
+      maxConcurrent: 2,
+      timeoutMinutes: 10,
+      enabled: true
+    }
+  }
+}
+
 /**
  * 测试执行队列
  *
  * 功能:
- * - 控制并发执行数量 (默认最多2个)
+ * - 从 Supabase 读取配置
+ * - 控制并发执行数量
  * - 队列管理,避免资源耗尽
  * - 使用 spawn 替代 exec,更轻量
- * - 执行超时控制 (默认10分钟)
+ * - 执行超时控制
  */
 export class TestExecutionQueue {
   private running = 0
   private maxConcurrent: number
   private queue: QueueTask[] = []
   private timeoutMs: number
+  private enabled: boolean
+  private configLoaded: boolean = false
 
-  constructor(maxConcurrent: number = 2, timeoutMinutes: number = 10) {
-    this.maxConcurrent = maxConcurrent
-    this.timeoutMs = timeoutMinutes * 60 * 1000
+  constructor() {
+    // 先使用默认值初始化，然后异步加载配置
+    this.maxConcurrent = 2
+    this.timeoutMs = 10 * 60 * 1000
+    this.enabled = true
+
+    // 异步加载配置
+    this.loadConfig()
+  }
+
+  /**
+   * 从 Supabase 加载配置
+   */
+  private async loadConfig() {
+    const config = await loadQueueConfig()
+    this.maxConcurrent = config.maxConcurrent
+    this.timeoutMs = config.timeoutMinutes * 60 * 1000
+    this.enabled = config.enabled
+    this.configLoaded = true
+
+    console.log('队列配置已加载:', {
+      maxConcurrent: this.maxConcurrent,
+      timeoutMinutes: config.timeoutMinutes,
+      enabled: this.enabled
+    })
+  }
+
+  /**
+   * 重新加载配置（用于配置更新后）
+   */
+  async reloadConfig() {
+    await this.loadConfig()
   }
 
   /**
@@ -34,7 +114,9 @@ export class TestExecutionQueue {
     return {
       running: this.running,
       queued: this.queue.length,
-      maxConcurrent: this.maxConcurrent
+      maxConcurrent: this.maxConcurrent,
+      enabled: this.enabled,
+      configLoaded: this.configLoaded
     }
   }
 
@@ -42,6 +124,11 @@ export class TestExecutionQueue {
    * 添加任务到队列
    */
   async enqueue(executionId: string, command: string): Promise<void> {
+    // 如果队列被禁用，直接执行
+    if (!this.enabled) {
+      return this.execute(command, executionId)
+    }
+
     return new Promise((resolve, reject) => {
       this.queue.push({ executionId, command, resolve, reject })
       this.process()
@@ -140,4 +227,4 @@ export class TestExecutionQueue {
 }
 
 // 单例模式
-export const executionQueue = new TestExecutionQueue(2, 10)
+export const executionQueue = new TestExecutionQueue()

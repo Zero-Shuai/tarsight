@@ -41,6 +41,11 @@ const navItems = [
     icon: BarChart3,
   },
   {
+    title: '系统设置',
+    href: '/settings',
+    icon: Settings,
+  },
+  {
     title: '项目管理',
     href: '/projects',
     icon: Key,
