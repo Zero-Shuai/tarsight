@@ -74,19 +74,19 @@ class Logger {
   }
 
   debug(message: string, context?: string, data?: Record<string, any>) {
-    this.log({ level: LogLevel.DEBUG, message, context, data })
+    this.log({ level: LogLevel.DEBUG, message, context, data, timestamp: new Date().toISOString() })
   }
 
   info(message: string, context?: string, data?: Record<string, any>) {
-    this.log({ level: LogLevel.INFO, message, context, data })
+    this.log({ level: LogLevel.INFO, message, context, data, timestamp: new Date().toISOString() })
   }
 
   warn(message: string, context?: string, data?: Record<string, any>) {
-    this.log({ level: LogLevel.WARN, message, context, data })
+    this.log({ level: LogLevel.WARN, message, context, data, timestamp: new Date().toISOString() })
   }
 
   error(message: string, context?: string, data?: Record<string, any>) {
-    this.log({ level: LogLevel.ERROR, message, context, data })
+    this.log({ level: LogLevel.ERROR, message, context, data, timestamp: new Date().toISOString() })
   }
 
   /**
