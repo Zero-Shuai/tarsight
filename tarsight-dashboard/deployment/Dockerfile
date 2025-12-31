@@ -4,14 +4,22 @@ FROM node:20-alpine AS builder
 # 设置工作目录
 WORKDIR /app
 
-# 复制 package.json 和 package-lock.json
-COPY package*.json ./
+# 复制 package.json（只复制这一个文件以利用 Docker 缓存）
+COPY package.json ./
 
-# 安装依赖
-RUN npm ci
+# 安装依赖（使用 npm install 而不是 npm ci，因为可能没有 package-lock.json）
+RUN npm install
 
 # 复制源代码
 COPY . .
+
+# 接受构建时的环境变量参数
+ARG NEXT_PUBLIC_SUPABASE_URL
+ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+# 设置构建时的环境变量（Next.js 需要在构建时访问这些变量）
+ENV NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
 
 # 构建应用
 RUN npm run build
@@ -24,6 +32,8 @@ WORKDIR /app
 
 # 设置环境变量
 ENV NODE_ENV=production
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
 
 # 创建非 root 用户
 RUN addgroup --system --gid 1001 nodejs
@@ -42,10 +52,6 @@ USER nextjs
 
 # 暴露端口
 EXPOSE 3000
-
-# 设置环境变量（如果没有提供）
-ENV PORT=3000
-ENV HOSTNAME="0.0.0.0"
 
 # 启动应用
 CMD ["node", "server.js"]
