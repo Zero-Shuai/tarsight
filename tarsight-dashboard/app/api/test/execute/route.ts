@@ -117,10 +117,15 @@ async function executeTestAsync(
   supabase: any
 ) {
   try {
+    console.log('=== 开始异步执行测试 ===')
+    console.log('执行命令:', command)
+    console.log('工作目录:', projectRoot)
+    console.log('执行ID:', executionId)
+
     // 使用重试机制执行命令
-    await retryAsync(
+    const { stdout, stderr } = await retryAsync(
       async () => {
-        await execAsync(command, {
+        const result = await execAsync(command, {
           env: {
             ...process.env,
             PYTHONPATH: projectRoot,
@@ -130,12 +135,19 @@ async function executeTestAsync(
           },
           timeout: 300000 // 5分钟超时
         })
+        console.log('=== Python 执行输出 ===')
+        console.log('STDOUT:', result.stdout)
+        if (result.stderr) {
+          console.log('STDERR:', result.stderr)
+        }
+        return result
       },
       {
         maxRetries: 2, // 最多重试2次
         delay: 2000,   // 初始延迟2秒
         backoff: true, // 指数退避
         onRetry: (error, attempt) => {
+          console.error(`第 ${attempt} 次重试...`, error)
           logError('TestExecution', error, {
             executionId,
             attempt,
@@ -144,8 +156,15 @@ async function executeTestAsync(
         }
       }
     )
+
+    console.log('=== 测试执行完成 ===')
+    console.log('最终输出:', stdout)
+
   } catch (err: any) {
     // 所有重试都失败，记录错误并更新状态
+    console.error('=== 测试执行失败 ===')
+    console.error('错误信息:', err.message)
+    console.error('错误堆栈:', err.stack)
     logError('TestExecution', err, {
       executionId,
       message: '测试执行失败，已达到最大重试次数'
@@ -160,6 +179,7 @@ async function executeTestAsync(
           completed_at: new Date().toISOString()
         })
         .eq('id', executionId)
+      console.log('已更新执行状态为失败')
     } catch (updateErr) {
       logError('DatabaseUpdate', updateErr, {
         executionId,
