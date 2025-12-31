@@ -111,7 +111,7 @@ export function TestCaseActions({ testCase, modules, onUpdate }: TestCaseActions
     <div className="flex gap-2">
       <Button
         variant="ghost"
-        size="icon"
+        size="sm"
         onClick={() => setShowEdit(true)}
         title="编辑"
       >
@@ -119,7 +119,7 @@ export function TestCaseActions({ testCase, modules, onUpdate }: TestCaseActions
       </Button>
       <Button
         variant="ghost"
-        size="icon"
+        size="sm"
         onClick={handleExecute}
         disabled={loading}
         title={loading ? "正在执行..." : "执行"}
@@ -132,7 +132,7 @@ export function TestCaseActions({ testCase, modules, onUpdate }: TestCaseActions
       </Button>
       <Button
         variant="ghost"
-        size="icon"
+        size="sm"
         onClick={handleDelete}
         disabled={loading}
         title="删除"
