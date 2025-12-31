@@ -136,7 +136,7 @@ export class TestExecutionQueue {
   /**
    * 添加任务到队列
    */
-  async enqueue(executionId: string, command: string): Promise<void> {
+  async enqueue(command: string, executionId: string): Promise<void> {
     // 确保配置已加载
     await this.ensureConfigLoaded()
 
