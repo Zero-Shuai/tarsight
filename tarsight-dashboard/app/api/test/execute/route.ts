@@ -13,8 +13,12 @@ const execAsync = promisify(exec)
  * - simple: 简化执行模式，直接调用 pytest
  */
 export async function POST(request: NextRequest) {
+  console.log('===== API 路由被调用 =====')
+  console.log('时间:', new Date().toISOString())
+
   try {
     const { test_case_ids, case_ids, mode = 'full' } = await request.json()
+    console.log('接收到的参数:', { test_case_ids, case_ids, mode })
 
     // 参数验证
     if (!test_case_ids || !Array.isArray(test_case_ids) || test_case_ids.length === 0) {
@@ -89,9 +93,11 @@ export async function POST(request: NextRequest) {
     console.log('执行命令:', command)
 
     // 异步执行测试（不等待，让它在后台运行）
+    console.log('准备调用 executeTestAsync...')
     executeTestAsync(command, execution.id, projectRoot, supabase).catch(err => {
       console.error('异步测试执行出错:', err)
     })
+    console.log('executeTestAsync 已调用（不等待结果）')
 
     return NextResponse.json({
       success: true,
