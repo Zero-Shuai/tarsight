@@ -120,9 +120,7 @@ services:
 networks:
   tarsight-network:
     driver: bridge
-    ipam:
-      config:
-        - subnet: 172.20.0.0/16
+    # 移除固定子网配置，让 Docker 自动分配
 
 # ==========================================
 # 数据卷配置
