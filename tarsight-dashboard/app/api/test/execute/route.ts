@@ -88,8 +88,10 @@ export async function POST(request: NextRequest) {
     console.log('执行名称:', executionName)
     console.log('执行命令:', command)
 
-    // 异步执行测试
-    executeTestAsync(command, execution.id, projectRoot, supabase)
+    // 异步执行测试（不等待，让它在后台运行）
+    executeTestAsync(command, execution.id, projectRoot, supabase).catch(err => {
+      console.error('异步测试执行出错:', err)
+    })
 
     return NextResponse.json({
       success: true,
