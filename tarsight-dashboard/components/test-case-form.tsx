@@ -188,7 +188,7 @@ export function TestCaseForm({ testCase, modules, onSuccess, onCancel }: TestCas
                 onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
                 placeholder="输入标签后按回车"
               />
-              <Button type="button" onClick={addTag} variant="outline" size="icon">
+              <Button type="button" onClick={addTag} variant="outline" size="sm">
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
