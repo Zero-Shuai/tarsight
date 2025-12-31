@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Eye, EyeOff, Key, Save, RefreshCw } from 'lucide-react'
+import { Eye, EyeOff, Key, Save, RefreshCw, CheckCircle, XCircle, Loader2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 
 interface ProjectConfig {
@@ -14,12 +14,16 @@ interface ProjectConfig {
   updated_at: string
 }
 
+type ValidationStatus = 'idle' | 'validating' | 'valid' | 'invalid'
+
 export default function ProjectsPage() {
   const [config, setConfig] = useState<ProjectConfig | null>(null)
   const [showToken, setShowToken] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
+  const [validationStatus, setValidationStatus] = useState<ValidationStatus>('idle')
+  const [validationMessage, setValidationMessage] = useState<string>('')
 
   // 加载配置
   const loadConfig = async () => {
@@ -116,6 +120,56 @@ export default function ProjectsPage() {
     loadConfig()
   }
 
+  // Token 有效性检测
+  const handleValidateToken = async () => {
+    if (!config?.api_token) {
+      setValidationMessage('请先输入 API Token')
+      setValidationStatus('invalid')
+      return
+    }
+
+    setValidationStatus('validating')
+    setValidationMessage('正在检测 Token 有效性...')
+
+    try {
+      // 调用一个简单的 API 接口来验证 Token
+      const response = await fetch(`${config.base_url}/api/health`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${config.api_token}`,
+          'Content-Type': 'application/json'
+        },
+        signal: AbortSignal.timeout(10000) // 10秒超时
+      })
+
+      if (response.ok) {
+        setValidationStatus('valid')
+        setValidationMessage('✅ Token 有效，可以正常使用')
+      } else if (response.status === 401) {
+        setValidationStatus('invalid')
+        setValidationMessage('❌ Token 无效或已过期，请检查后重新输入')
+      } else if (response.status === 404) {
+        // 如果 404，尝试其他可能的端点
+        setValidationStatus('idle')
+        setValidationMessage('⚠️ 无法确定 Token 有效性（健康检查端点不存在），建议保存后实际测试')
+      } else {
+        setValidationStatus('invalid')
+        setValidationMessage(`❌ Token 验证失败，状态码: ${response.status}`)
+      }
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        setValidationStatus('invalid')
+        setValidationMessage('❌ 请求超时，请检查网络连接或 API 地址是否正确')
+      } else if (error.message?.includes('fetch')) {
+        setValidationStatus('invalid')
+        setValidationMessage('❌ 网络错误，请检查 API 地址是否正确')
+      } else {
+        setValidationStatus('invalid')
+        setValidationMessage(`❌ 验证出错: ${error.message}`)
+      }
+    }
+  }
+
   useEffect(() => {
     loadConfig()
   }, [])
@@ -208,7 +262,12 @@ export default function ProjectsPage() {
                 <input
                   type={showToken ? 'text' : 'password'}
                   value={config?.api_token || ''}
-                  onChange={(e) => setConfig({ ...config!, api_token: e.target.value })}
+                  onChange={(e) => {
+                    setConfig({ ...config!, api_token: e.target.value })
+                    // Token 变更时重置验证状态
+                    setValidationStatus('idle')
+                    setValidationMessage('')
+                  }}
                   placeholder="请输入 API Token"
                   className="flex-1 px-3 py-2 border rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
@@ -220,6 +279,23 @@ export default function ProjectsPage() {
                 >
                   {showToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleValidateToken}
+                  disabled={validationStatus === 'validating' || !config?.api_token}
+                  title="检测 Token 有效性"
+                >
+                  {validationStatus === 'validating' ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : validationStatus === 'valid' ? (
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                  ) : validationStatus === 'invalid' ? (
+                    <XCircle className="h-4 w-4 text-red-600" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4" />
+                  )}
+                </Button>
               </div>
               <p className="text-xs text-muted-foreground">
                 {showToken
@@ -229,6 +305,32 @@ export default function ProjectsPage() {
               </p>
             </div>
           </div>
+
+          {/* Token 验证结果显示 */}
+          {validationMessage && (
+            <div
+              className={`p-4 rounded-lg border ${
+                validationStatus === 'valid'
+                  ? 'bg-green-50 text-green-800 border-green-200'
+                  : validationStatus === 'invalid'
+                  ? 'bg-red-50 text-red-800 border-red-200'
+                  : 'bg-yellow-50 text-yellow-800 border-yellow-200'
+              }`}
+            >
+              <div className="flex items-start gap-2">
+                {validationStatus === 'validating' && (
+                  <Loader2 className="h-5 w-5 animate-spin mt-0.5 flex-shrink-0" />
+                )}
+                {validationStatus === 'valid' && (
+                  <CheckCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                )}
+                {validationStatus === 'invalid' && (
+                  <XCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                )}
+                <span className="text-sm">{validationMessage}</span>
+              </div>
+            </div>
+          )}
 
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <p className="text-sm font-medium text-blue-900 mb-2">🔒 安全提示</p>
