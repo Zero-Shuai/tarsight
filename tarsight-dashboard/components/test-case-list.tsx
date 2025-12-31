@@ -106,14 +106,11 @@ export function TestCaseList({ groupedCases, modules, initialTestCases }: TestCa
                           )}
                         </div>
                         <p className="text-sm text-muted-foreground">{testCase.test_name}</p>
-                        <p className="text-xs text-muted-foreground font-mono">{testCase.url}</p>
-                        {testCase.description && (
-                          <p className="text-sm text-muted-foreground mt-1">{testCase.description}</p>
-                        )}
+                        <p className="text-xs text-muted-foreground font-mono">{testCase.api_method} {testCase.api_path}</p>
                         {testCase.tags && testCase.tags.length > 0 && (
                           <div className="flex gap-1 mt-2">
-                            {testCase.tags.map(tag => (
-                              <Badge key={tag} variant="secondary" className="text-xs">
+                            {testCase.tags.map((tag: string) => (
+                              <Badge key={tag} variant="outline" className="text-xs">
                                 {tag}
                               </Badge>
                             ))}
