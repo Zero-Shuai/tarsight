@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
 import Link from 'next/link'
 import { TestCaseList } from '@/components/test-case-list'
+import type { TestCase } from '@/lib/types/database'
 
 async function getTestCases() {
   const supabase = await createClient()
