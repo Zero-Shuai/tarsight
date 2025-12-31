@@ -100,10 +100,11 @@ export default async function ExecutionDetailPage({
     )
   }
 
-  const totalTests = execution.total_tests
-  const passedTests = execution.passed_tests
-  const failedTests = execution.failed_tests
-  const skippedTests = execution.skipped_tests
+  // 从实际测试结果计算统计数据（更准确）
+  const totalTests = testResults.length
+  const passedTests = testResults.filter(r => r.status === 'passed').length
+  const failedTests = testResults.filter(r => r.status === 'failed').length
+  const skippedTests = testResults.filter(r => r.status === 'skipped').length
   const passRate = totalTests > 0 ? (passedTests / totalTests) * 100 : 0
 
   // 计算执行时长
