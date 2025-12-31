@@ -51,7 +51,7 @@ COPY --from=builder /app/.next/static ./.next/static
 COPY supabase_version ./python
 
 # 安装 Python 依赖
-RUN pip3 install --no-cache-dir pytest pytest-html allure-pytest supabase requests python-dotenv
+RUN pip3 install --no-cache-dir --break-system-packages pytest pytest-html allure-pytest supabase requests python-dotenv
 
 # 修改文件所有者
 RUN chown -R nextjs:nodejs /app
