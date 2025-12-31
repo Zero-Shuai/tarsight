@@ -5,13 +5,13 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # 复制 package.json（只复制这一个文件以利用 Docker 缓存）
-COPY package.json ./
+COPY tarsight-dashboard/package.json ./
 
 # 安装依赖（使用 npm install 而不是 npm ci，因为可能没有 package-lock.json）
 RUN npm install
 
 # 复制源代码
-COPY . .
+COPY tarsight-dashboard/ .
 
 # 接受构建时的环境变量参数
 ARG NEXT_PUBLIC_SUPABASE_URL
@@ -47,8 +47,8 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
-# 复制 Python 测试代码（从后端项目）
-COPY ../supabase_version ./python
+# 复制 Python 测试代码（从构建上下文）
+COPY supabase_version ./python
 
 # 安装 Python 依赖
 RUN pip3 install --no-cache-dir pytest pytest-html allure-pytest supabase requests python-dotenv
