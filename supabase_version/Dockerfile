@@ -51,8 +51,8 @@ ENV PYTHONDONTWRITEBYTECODE=1
 # 暴露端口（如果需要 API 服务）
 # EXPOSE 8000
 
-# 默认命令
-CMD ["python", "run.py", "--help"]
+# 默认命令 - 保持容器运行以便执行测试任务
+CMD ["python", "-u", "-c", "import time; print('Tarsight development backend ready...', flush=True); time.sleep(3600)"]
 
 # ==========================================
 # 生产阶段 - 优化的生产环境镜像
@@ -87,5 +87,6 @@ ENV REPORTS_DIR=/app/reports
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import sys; sys.exit(0)" || exit 1
 
-# 默认命令（可以被 docker-compose 覆盖）
-CMD ["python", "run.py", "--help"]
+# 默认命令 - 保持容器运行以便执行测试任务
+# 使用 sleep infinity 让容器持续运行，等待通过 docker exec 执行命令
+CMD ["python", "-u", "-c", "import time; print('Tarsight backend ready for test execution...', flush=True); time.sleep(3600)"]

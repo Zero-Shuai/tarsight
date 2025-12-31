@@ -149,17 +149,21 @@ def run_tests_and_save_to_json(selected_modules, execution_name, case_ids=None):
     if case_ids:
         env['TARGET_CASE_IDS'] = case_ids
 
-    logger.info(f"\n📋 执行命令: .venv/bin/python -m pytest utils/test_tarsight.py -v --alluredir=reports/allure-results --html=reports/test_report.html --self-contained-html")
+    logger.info(f"\n📋 执行命令: python -m pytest utils/test_tarsight.py -v --alluredir=reports/allure-results --html=reports/test_report.html --self-contained-html")
     logger.info("=" * 60)
 
     try:
-        # 运行测试 - 使用虚拟环境的Python
+        # 运行测试 - 优先使用虚拟环境，否则使用系统 Python
         venv_python = os.path.join(project_root, '.venv', 'bin', 'python')
         if not os.path.exists(venv_python):
             venv_python = os.path.join(project_root, '.venv', 'Scripts', 'python.exe')  # Windows
 
+        # 如果虚拟环境不存在，使用系统 Python
+        python_cmd = venv_python if os.path.exists(venv_python) else sys.executable
+        logger.info(f"🐍 使用 Python: {python_cmd}")
+
         cmd = [
-            venv_python, "-m", "pytest",
+            python_cmd, "-m", "pytest",
             "utils/test_tarsight.py",
             "-v",
             "--alluredir=reports/allure-results",

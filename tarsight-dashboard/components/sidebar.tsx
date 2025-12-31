@@ -9,6 +9,7 @@ import {
   History,
   BarChart3,
   Settings,
+  Key,
 } from 'lucide-react'
 import { UserMenu } from '@/components/user-menu'
 
@@ -32,6 +33,11 @@ const navItems = [
     title: '统计分析',
     href: '/analytics',
     icon: BarChart3,
+  },
+  {
+    title: '项目管理',
+    href: '/projects',
+    icon: Key,
   },
 ]
 
