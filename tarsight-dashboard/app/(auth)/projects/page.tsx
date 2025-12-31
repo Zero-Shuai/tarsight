@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Eye, EyeOff, Key, Save, RefreshCw, CheckCircle, XCircle, Loader2 } from 'lucide-react'
+import { Eye, EyeOff, Key, Save, ShieldCheck, CheckCircle, XCircle, Loader2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 
 interface ProjectConfig {
@@ -285,6 +285,7 @@ export default function ProjectsPage() {
                   onClick={handleValidateToken}
                   disabled={validationStatus === 'validating' || !config?.api_token}
                   title="检测 Token 有效性"
+                  className="relative"
                 >
                   {validationStatus === 'validating' ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -293,7 +294,7 @@ export default function ProjectsPage() {
                   ) : validationStatus === 'invalid' ? (
                     <XCircle className="h-4 w-4 text-red-600" />
                   ) : (
-                    <RefreshCw className="h-4 w-4" />
+                    <ShieldCheck className="h-4 w-4" />
                   )}
                 </Button>
               </div>
