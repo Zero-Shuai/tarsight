@@ -72,15 +72,14 @@ export class TestExecutionQueue {
   private timeoutMs: number
   private enabled: boolean
   private configLoaded: boolean = false
+  private configPromise: Promise<void> | null = null
 
   constructor() {
-    // 先使用默认值初始化，然后异步加载配置
+    // 先使用默认值初始化
     this.maxConcurrent = 2
     this.timeoutMs = 10 * 60 * 1000
     this.enabled = true
-
-    // 异步加载配置
-    this.loadConfig()
+    this.configPromise = null
   }
 
   /**
@@ -98,6 +97,20 @@ export class TestExecutionQueue {
       timeoutMinutes: config.timeoutMinutes,
       enabled: this.enabled
     })
+  }
+
+  /**
+   * 确保配置已加载（懒加载）
+   */
+  private async ensureConfigLoaded() {
+    if (!this.configPromise && !this.configLoaded) {
+      this.configPromise = this.loadConfig().finally(() => {
+        this.configPromise = null
+      })
+    }
+    if (this.configPromise) {
+      await this.configPromise
+    }
   }
 
   /**
@@ -124,6 +137,9 @@ export class TestExecutionQueue {
    * 添加任务到队列
    */
   async enqueue(executionId: string, command: string): Promise<void> {
+    // 确保配置已加载
+    await this.ensureConfigLoaded()
+
     // 如果队列被禁用，直接执行
     if (!this.enabled) {
       return this.execute(command, executionId)
@@ -166,9 +182,10 @@ export class TestExecutionQueue {
   private async execute(command: string, executionId: string): Promise<void> {
     return new Promise((resolve, reject) => {
       console.log(`[${new Date().toISOString()}] 开始执行测试: ${executionId}`)
+      console.log(`[${new Date().toISOString()}] 执行命令: ${command}`)
 
       const child = spawn(command, {
-        shell: true,
+        shell: '/bin/bash',
         env: { ...process.env, EXECUTION_ID: executionId }
       })
 
