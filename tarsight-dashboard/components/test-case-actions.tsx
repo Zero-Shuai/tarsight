@@ -16,6 +16,7 @@ export function TestCaseActions({ testCase, modules, onUpdate }: TestCaseActions
   const [showEdit, setShowEdit] = useState(false)
   const [loading, setLoading] = useState(false)
   const [executing, setExecuting] = useState(false)
+  const [executionLock, setExecutionLock] = useState(false)
 
   const handleDelete = async () => {
     if (!confirm('确定要删除这个测试用例吗？')) return
@@ -37,23 +38,20 @@ export function TestCaseActions({ testCase, modules, onUpdate }: TestCaseActions
   }
 
   const handleExecute = async () => {
-    if (executing) {
+    // 多重防护：检查执行状态和锁
+    if (executing || executionLock) {
       alert('测试正在执行中，请稍候...')
       return
     }
 
-    // 先设置执行状态，禁用按钮
-    setExecuting(true)
-    setLoading(true)
-
-    // 稍微延迟显示确认对话框，确保UI已经更新
-    await new Promise(resolve => setTimeout(resolve, 50))
-
-    if (!confirm('确定要执行这个测试用例吗？这将调用后端API执行测试。')) {
-      setExecuting(false)
-      setLoading(false)
+    if (!confirm('确定要执行这个测试用例吗？')) {
       return
     }
+
+    // 立即设置锁，防止任何重复调用
+    setExecutionLock(true)
+    setExecuting(true)
+    setLoading(true)
 
     try {
       // 调用后端执行 API
@@ -75,7 +73,7 @@ export function TestCaseActions({ testCase, modules, onUpdate }: TestCaseActions
         throw new Error(result.error || '执行失败')
       }
 
-      alert('测试已提交执行，请稍后查看执行历史')
+      alert('测试已加入队列，请稍后查看执行历史')
 
       // 延迟跳转，给用户时间看到提示
       setTimeout(() => {
@@ -83,8 +81,10 @@ export function TestCaseActions({ testCase, modules, onUpdate }: TestCaseActions
       }, 500)
     } catch (error: any) {
       alert('执行失败: ' + error.message)
+      // 错误时释放锁
       setLoading(false)
       setExecuting(false)
+      setExecutionLock(false)
     }
     // 注意：成功时不设置状态，因为会跳转页面
   }

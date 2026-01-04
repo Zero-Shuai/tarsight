@@ -101,10 +101,10 @@ export default async function ExecutionDetailPage({
   }
 
   // 从实际测试结果计算统计数据（更准确）
-  const totalTests = testResults.length
-  const passedTests = testResults.filter(r => r.status === 'passed').length
-  const failedTests = testResults.filter(r => r.status === 'failed').length
-  const skippedTests = testResults.filter(r => r.status === 'skipped').length
+  const totalTests = testResults.length > 0 ? testResults.length : execution.total_tests
+  const passedTests = testResults.length > 0 ? testResults.filter(r => r.status === 'passed').length : execution.passed_tests
+  const failedTests = testResults.length > 0 ? testResults.filter(r => r.status === 'failed').length : execution.failed_tests
+  const skippedTests = testResults.length > 0 ? testResults.filter(r => r.status === 'skipped').length : execution.skipped_tests
   const passRate = totalTests > 0 ? (passedTests / totalTests) * 100 : 0
 
   // 计算执行时长
@@ -130,6 +130,20 @@ export default async function ExecutionDetailPage({
       </div>
 
       {/* 统计概览 */}
+      {execution.error_message && (
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 text-2xl">⚠️</div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-red-900 mb-1">执行失败</h3>
+                <p className="text-sm text-red-800">{execution.error_message}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid gap-4 md:grid-cols-5">
         <Card>
           <CardHeader className="pb-3">

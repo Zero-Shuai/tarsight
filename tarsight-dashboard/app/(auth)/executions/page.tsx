@@ -94,32 +94,41 @@ export default async function ExecutionsPage() {
                       <CardTitle className="text-lg">{execution.execution_name}</CardTitle>
                       <CardDescription>{formatDate(execution.started_at)}</CardDescription>
                     </div>
-                    <Badge className={getStatusColor(execution.status)}>
+                    <Badge variant="outline" className={getStatusColor(execution.status)}>
                       {getStatusText(execution.status)}
                     </Badge>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid gap-4 md:grid-cols-5">
-                    <div>
-                      <p className="text-sm text-muted-foreground">总用例</p>
-                      <p className="text-2xl font-bold">{execution.total_tests}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">通过</p>
-                      <p className="text-2xl font-bold text-green-600">{execution.passed_tests}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">失败</p>
-                      <p className="text-2xl font-bold text-red-600">{execution.failed_tests}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">跳过</p>
-                      <p className="text-2xl font-bold text-yellow-600">{execution.skipped_tests}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">通过率</p>
-                      <p className="text-2xl font-bold">{passRate.toFixed(1)}%</p>
+                  <div className="space-y-4">
+                    {/* 错误信息提示 */}
+                    {execution.error_message && (
+                      <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <p className="text-sm text-red-800 font-medium">⚠️ {execution.error_message}</p>
+                      </div>
+                    )}
+
+                    <div className="grid gap-4 md:grid-cols-5">
+                      <div>
+                        <p className="text-sm text-muted-foreground">总用例</p>
+                        <p className="text-2xl font-bold">{execution.total_tests}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">通过</p>
+                        <p className="text-2xl font-bold text-green-600">{execution.passed_tests}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">失败</p>
+                        <p className="text-2xl font-bold text-red-600">{execution.failed_tests}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">跳过</p>
+                        <p className="text-2xl font-bold text-yellow-600">{execution.skipped_tests}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">通过率</p>
+                        <p className="text-2xl font-bold">{passRate.toFixed(1)}%</p>
+                      </div>
                     </div>
                   </div>
 

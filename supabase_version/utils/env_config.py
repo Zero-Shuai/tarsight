@@ -47,7 +47,9 @@ class EnvConfig:
         for env_file in self.ENV_FILES:
             env_path = self._project_root / env_file
             if env_path.exists():
-                load_dotenv(env_path, override=True)
+                # 使用 override=False，不要覆盖已设置的环境变量
+                # 这样程序传入的环境变量（如 TARSIGHT_SHARED_RECORDER_FILE）就不会被 .env 覆盖
+                load_dotenv(env_path, override=False)
                 logger.debug(f"✅ 已加载环境变量文件: {env_file}")
 
     @classmethod

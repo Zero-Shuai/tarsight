@@ -17,6 +17,7 @@ class FileTestRecorder:
     def __init__(self):
         """初始化文件记录器"""
         self.shared_file_path = os.environ.get('TARSIGHT_SHARED_RECORDER_FILE')
+
         if self.shared_file_path:
             print(f"✅ 文件记录器已启用: {self.shared_file_path}")
         else:
@@ -24,6 +25,9 @@ class FileTestRecorder:
 
     def add_test_result(self, test_result: Dict[str, Any]):
         """添加测试结果到共享文件"""
+        # 每次都重新读取环境变量，确保获取最新值
+        self.shared_file_path = os.environ.get('TARSIGHT_SHARED_RECORDER_FILE')
+
         if not self.shared_file_path:
             return False
 
@@ -114,8 +118,6 @@ class FileTestRecorder:
 _file_recorder: Optional[FileTestRecorder] = None
 
 def get_file_recorder() -> FileTestRecorder:
-    """获取文件记录器实例"""
-    global _file_recorder
-    if _file_recorder is None:
-        _file_recorder = FileTestRecorder()
-    return _file_recorder
+    """获取文件记录器实例（每次都创建新实例以确保环境变量是最新的）"""
+    # 不再使用单例模式，每次都创建新实例
+    return FileTestRecorder()

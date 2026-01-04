@@ -77,13 +77,14 @@ class TestTarsightTable:
             # 构建请求URL
             url = build_request_url(test_case, config.base_url)
 
-            # 构建完整的请求体
-            request_body = build_full_request_body(test_case)
+            # 构建完整的请求体（确保不为 None）
+            request_body = build_full_request_body(test_case) or {}
 
-            # 构建headers
+            # 构建headers（确保不为 None）
             headers = config.headers.copy()
-            if test_case.get('headers'):
-                headers.update(test_case['headers'])
+            case_headers = test_case.get('headers')
+            if case_headers:
+                headers.update(case_headers)
 
             with allure.step("发送API请求"):
                 start_time = time.time()
@@ -125,6 +126,93 @@ class TestTarsightTable:
         print(f"\n📝 响应详情:")
         print(f"   📊 状态码: {resp.status_code}")
 
+        # 如果有验证规则，执行内容验证
+        validation_rules = test_case.get('validation_rules')
+        if validation_rules:
+            print(f"\n🔍 执行内容验证...")
+            try:
+                # 尝试解析 JSON 响应
+                response_data = resp.json()
+                print(f"   📄 响应数据: {json.dumps(response_data, indent=2, ensure_ascii=False)[:200]}...")
+
+                # 检查验证规则类型
+                rule_type = validation_rules.get('type', 'json_path')
+
+                if rule_type == 'json_path':
+                    # JSON Path 验证
+                    checks = validation_rules.get('checks', [])
+                    for check in checks:
+                        path = check.get('path')
+                        operator = check.get('operator', 'equals')  # 默认为 equals
+                        expected_value = check.get('value')
+
+                        # 简单的 JSON Path 实现（支持 $.field 格式）
+                        actual_value = response_data
+                        if path.startswith('$.'):
+                            # 移除 $. 前缀并按点分割
+                            path_parts = path[2:].split('.')
+                            for part in path_parts:
+                                if isinstance(actual_value, dict):
+                                    actual_value = actual_value.get(part)
+                                elif isinstance(actual_value, list) and part.isdigit():
+                                    index = int(part)
+                                    if 0 <= index < len(actual_value):
+                                        actual_value = actual_value[index]
+                                    else:
+                                        actual_value = None
+                                        break
+                                else:
+                                    actual_value = None
+                                    break
+
+                        # 根据操作符执行验证
+                        assert actual_value is not None, f"JSON Path '{path}' 不存在于响应中"
+
+                        # 执行不同类型的验证
+                        if operator == 'equals':
+                            assert actual_value == expected_value, \
+                                f"验证失败: Path '{path}' - 预期 {expected_value}, 实际 {actual_value}"
+                            print(f"   ✅ 验证通过: {path} = {actual_value}")
+                        elif operator == 'contains':
+                            assert str(expected_value) in str(actual_value), \
+                                f"验证失败: Path '{path}' - 期望包含 '{expected_value}', 实际 '{actual_value}'"
+                            print(f"   ✅ 验证通过: {path} 包含 '{expected_value}'")
+                        elif operator == 'not_contains':
+                            assert str(expected_value) not in str(actual_value), \
+                                f"验证失败: Path '{path}' - 期望不包含 '{expected_value}', 但实际包含 '{actual_value}'"
+                            print(f"   ✅ 验证通过: {path} 不包含 '{expected_value}'")
+                        elif operator == 'gt':
+                            assert actual_value > expected_value, \
+                                f"验证失败: Path '{path}' - 期望大于 {expected_value}, 实际 {actual_value}"
+                            print(f"   ✅ 验证通过: {path} > {expected_value}")
+                        elif operator == 'lt':
+                            assert actual_value < expected_value, \
+                                f"验证失败: Path '{path}' - 期望小于 {expected_value}, 实际 {actual_value}"
+                            print(f"   ✅ 验证通过: {path} < {expected_value}")
+                        elif operator == 'gte':
+                            assert actual_value >= expected_value, \
+                                f"验证失败: Path '{path}' - 期望大于等于 {expected_value}, 实际 {actual_value}"
+                            print(f"   ✅ 验证通过: {path} >= {expected_value}")
+                        elif operator == 'lte':
+                            assert actual_value <= expected_value, \
+                                f"验证失败: Path '{path}' - 期望小于等于 {expected_value}, 实际 {actual_value}"
+                            print(f"   ✅ 验证通过: {path} <= {expected_value}")
+                        else:
+                            # 未知操作符，默认使用 equals
+                            assert actual_value == expected_value, \
+                                f"验证失败: Path '{path}' - 预期 {expected_value}, 实际 {actual_value}"
+                            print(f"   ✅ 验证通过: {path} = {actual_value}")
+
+                print(f"   ✅ 所有内容验证通过")
+            except json.JSONDecodeError as e:
+                print(f"   ⚠️ 响应不是 JSON 格式，跳过内容验证: {e}")
+            except AssertionError as e:
+                print(f"   ❌ 内容验证失败: {e}")
+                raise
+            except Exception as e:
+                print(f"   ⚠️ 内容验证出错: {e}")
+                raise
+
         # 构建响应信息
         response_info = {
             "Status Code": resp.status_code,
@@ -162,10 +250,13 @@ class TestTarsightTable:
                     assert "data" in data, "成功响应缺少data字段"
                     assert data["code"] == 200, f"状态码不匹配: 预期 200, 实际 {data['code']}"
                 else:
-                    # 失败响应的额外验证
-                    print(f"   ⚠️ API返回失败: {data.get('message', '未知错误')}")
-                    print(f"   🔢 错误代码: {data.get('code', 'N/A')}")
-                    # 失败响应可能没有data字段，这是正常的
+                    # 失败响应应该导致测试失败
+                    error_msg = data.get('message', '未知错误')
+                    error_code = data.get('code', 'N/A')
+                    print(f"   ⚠️ API返回失败: {error_msg}")
+                    print(f"   🔢 错误代码: {error_code}")
+                    # 断言失败，确保测试被标记为 failed
+                    assert False, f"API返回失败: {error_msg} (code: {error_code})"
 
                 # 验证数据结构（仅当API返回成功且有data字段时）
                 if data.get("success") is True and "data" in data:
@@ -221,58 +312,9 @@ class TestTarsightTable:
         # 存储响应信息到实例变量，供增强HTML报告使用
         self._last_response_info = response_info
 
-        # 记录测试结果
-        try:
-            test_status = "passed"
-            error_msg = None
-
-            # 检查测试是否成功
-            if resp.status_code != test_case['expected_status']:
-                test_status = "failed"
-                error_msg = f"状态码不匹配: 预期 {test_case['expected_status']}, 实际 {resp.status_code}"
-            elif resp.status_code == 200:
-                try:
-                    data = resp.json()
-                    if not data.get('success', True):
-                        test_status = "failed"
-                        error_msg = f"API返回失败: {data.get('message', '未知错误')}"
-                except json.JSONDecodeError:
-                    pass
-
-            # 记录到 Supabase (如果启用)
-            if os.environ.get('SUPABASE_RECORDING') == 'true':
-                try:
-                    recorder = get_test_recorder()
-                    recorder.record_test_result(
-                        test_case=test_case,
-                        request_info=request_info,
-                        response_info=response_info,
-                        status=test_status,
-                        error_message=error_msg,
-                        duration=response_time
-                    )
-                except Exception as e:
-                    print(f"⚠️ Supabase 记录失败: {e}")
-
-            # 记录到 JSON (如果启用)
-            if os.environ.get('JSON_RECORDING') == 'true':
-                try:
-                    from utils.json_test_recorder import get_json_recorder
-                    json_recorder = get_json_recorder()
-                    json_recorder.add_test_result(
-                        test_case=test_case,
-                        request_info=request_info,
-                        response_info=response_info,
-                        status=test_status,
-                        error_message=error_msg,
-                        duration=response_time
-                    )
-                except Exception as e:
-                    print(f"⚠️ JSON 记录失败: {e}")
-
-        except Exception as e:
-            # 记录失败不影响测试执行
-            print(f"⚠️ 测试结果记录失败: {e}")
+        # 注意：不再手动记录测试结果到数据库
+        # pytest_runtest_makereport hook 会自动处理，包括验证规则失败的情况
+        # 手动记录会导致验证规则失败时，状态被错误地记录为 passed
 
     def test_all_test_cases_structure(self):
         """验证测试用例结构完整性"""

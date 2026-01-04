@@ -382,6 +382,68 @@ class SupabaseClient:
             }
 
 
+    def update_execution_status(self, execution_id: str, json_file_path: str, status: str = 'completed') -> bool:
+        """
+        根据JSON文件更新执行记录的状态和统计信息
+
+        Args:
+            execution_id: 执行记录ID
+            json_file_path: JSON结果文件路径
+            status: 执行状态 ('completed', 'failed', 'cancelled')
+
+        Returns:
+            bool: 是否更新成功
+        """
+        try:
+            import json
+            from datetime import datetime
+
+            # 读取JSON文件
+            with open(json_file_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+
+            test_results = data.get('test_results', [])
+
+            # 计算统计信息
+            stats = {
+                'total': len(test_results),
+                'passed': len([r for r in test_results if r.get('status') == 'passed']),
+                'failed': len([r for r in test_results if r.get('status') == 'failed']),
+                'skipped': len([r for r in test_results if r.get('status') == 'skipped']),
+                'duration': sum([r.get('duration', 0.0) for r in test_results])
+            }
+
+            # 更新执行记录
+            update_data = {
+                'status': status,
+                'total_tests': stats['total'],
+                'passed_tests': stats['passed'],
+                'failed_tests': stats['failed'],
+                'skipped_tests': stats['skipped'],
+                'total_duration': stats.get('duration', 0.0),
+                'completed_at': datetime.now().isoformat()
+            }
+
+            response = self.session.patch(
+                f"{self.supabase_url}/rest/v1/test_executions",
+                params={'id': f'eq.{execution_id}'},
+                headers=self.headers,
+                json=update_data,
+                timeout=10
+            )
+
+            if response.status_code not in [200, 204]:
+                logger.warning(f"⚠️ 更新执行记录失败: {response.status_code}")
+                return False
+
+            logger.info(f"✅ 执行记录已更新: {stats}")
+            return True
+
+        except Exception as e:
+            logger.error(f"❌ 更新执行记录时出错: {e}")
+            return False
+
+
 def get_supabase_client(access_token: Optional[str] = None) -> SupabaseClient:
     """
     获取 Supabase 客户端实例

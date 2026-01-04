@@ -189,7 +189,9 @@ class TestExecutionRecorder:
                 'response_info': response_info,
                 'recorded_at': datetime.now().isoformat()
             }
-            self.file_recorder.add_test_result(shared_result)
+            # 每次都重新获取文件记录器，确保使用最新的环境变量
+            from utils.file_test_recorder import get_file_recorder
+            get_file_recorder().add_test_result(shared_result)
 
             # 更新统计信息
             if status == 'passed':

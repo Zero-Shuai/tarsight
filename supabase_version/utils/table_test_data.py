@@ -194,6 +194,13 @@ def load_test_cases_from_supabase() -> List[TestCase]:
             except (json.JSONDecodeError, TypeError):
                 variables = {}
 
+            try:
+                validation_rules = db_case.get('validation_rules')
+                if validation_rules and isinstance(validation_rules, str):
+                    validation_rules = json.loads(validation_rules)
+            except (json.JSONDecodeError, TypeError):
+                validation_rules = None
+
             # 解析tags
             tags = db_case.get('tags', [])
             if isinstance(tags, str):
@@ -212,6 +219,7 @@ def load_test_cases_from_supabase() -> List[TestCase]:
                 'expected_status': db_case.get('expected_status', 200),
                 'headers': headers,
                 'variables': variables,
+                'validation_rules': validation_rules,
                 'tags': tags
             }
             test_cases.append(test_case)
@@ -267,8 +275,17 @@ def build_full_request_body(test_case: TestCase) -> Dict[str, Any]:
     Returns:
         完整的请求体
     """
-    request_body = test_case.get('request_body', {}).copy()
-    variables = test_case.get('variables', {})
+    # 确保 request_body 不为 None，如果是 None 或不是 dict，使用空 dict
+    request_body = test_case.get('request_body')
+    if not isinstance(request_body, dict):
+        request_body = {}
+    else:
+        request_body = request_body.copy()
+
+    # 确保 variables 不为 None
+    variables = test_case.get('variables')
+    if not isinstance(variables, dict):
+        variables = {}
 
     # 将variables合并到request_body中
     if variables:

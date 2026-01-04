@@ -6,12 +6,18 @@ export interface QueueTask {
   command: string
   resolve: () => void
   reject: (error: Error) => void
+  timestamp: number
 }
 
 export interface QueueConfig {
   maxConcurrent: number
   timeoutMinutes: number
   enabled: boolean
+}
+
+export interface QueueDiagnostics {
+  status: ReturnType<TestExecutionQueue['getStatus']>
+  queuedTasks: Array<{ executionId: string; timestamp: number; waitTime: number }>
 }
 
 /**
@@ -134,11 +140,72 @@ export class TestExecutionQueue {
   }
 
   /**
+   * 获取队列诊断信息
+   */
+  getDiagnostics(): QueueDiagnostics {
+    const now = Date.now()
+    return {
+      status: this.getStatus(),
+      queuedTasks: this.queue.map(task => ({
+        executionId: task.executionId,
+        timestamp: task.timestamp,
+        waitTime: now - task.timestamp
+      }))
+    }
+  }
+
+  /**
+   * 清空队列中所有待处理的任务
+   * 返回被清理的任务数量
+   */
+  clearQueue(): number {
+    const clearedCount = this.queue.length
+
+    // 拒绝所有队列中的任务
+    this.queue.forEach(task => {
+      task.reject(new Error('队列已被清空'))
+    })
+
+    // 清空队列
+    this.queue = []
+
+    console.log(`队列已清空，移除了 ${clearedCount} 个任务`)
+
+    return clearedCount
+  }
+
+  /**
+   * 重置队列状态（用于异常恢复）
+   * 警告：这会中断所有正在运行的任务
+   */
+  async reset(): Promise<void> {
+    console.warn('正在重置队列状态...')
+
+    // 清空队列
+    this.clearQueue()
+
+    // 重置运行计数器
+    this.running = 0
+
+    console.log('队列状态已重置')
+  }
+
+  /**
+   * 直接执行任务，跳过队列（用于紧急手动执行）
+   */
+  async executeDirect(command: string, executionId: string): Promise<void> {
+    console.log(`[${new Date().toISOString()}] 直接执行任务（跳过队列）: ${executionId}`)
+    return this.execute(command, executionId)
+  }
+
+  /**
    * 添加任务到队列
    */
   async enqueue(command: string, executionId: string): Promise<void> {
     // 确保配置已加载
     await this.ensureConfigLoaded()
+
+    console.log(`[${new Date().toISOString()}] 任务加入队列: ${executionId}, 当前状态: running=${this.running}, queued=${this.queue.length}`)
 
     // 如果队列被禁用，直接执行
     if (!this.enabled) {
@@ -146,7 +213,13 @@ export class TestExecutionQueue {
     }
 
     return new Promise((resolve, reject) => {
-      this.queue.push({ executionId, command, resolve, reject })
+      this.queue.push({
+        executionId,
+        command,
+        resolve,
+        reject,
+        timestamp: Date.now()
+      })
       this.process()
     })
   }

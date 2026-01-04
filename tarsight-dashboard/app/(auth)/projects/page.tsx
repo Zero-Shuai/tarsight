@@ -98,6 +98,8 @@ export default function ProjectsPage() {
           user_id: user.id,
           api_token: config.api_token,
           updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id'  // 指定冲突列为 user_id
         })
 
       if (error) {
@@ -143,19 +145,48 @@ export default function ProjectsPage() {
         signal: AbortSignal.timeout(10000) // 10秒超时
       })
 
-      if (response.ok) {
-        setValidationStatus('valid')
-        setValidationMessage('✅ Token 有效，可以正常使用')
-      } else if (response.status === 401) {
-        setValidationStatus('invalid')
-        setValidationMessage('❌ Token 无效或已过期，请检查后重新输入')
-      } else if (response.status === 404) {
+      // 检查响应状态码
+      if (response.status === 404) {
         setValidationStatus('invalid')
         setValidationMessage('❌ API 端点不存在，请检查 API 地址配置')
-      } else {
-        setValidationStatus('invalid')
-        setValidationMessage(`❌ Token 验证失败，状态码: ${response.status}`)
+        return
       }
+
+      if (response.status >= 500) {
+        setValidationStatus('invalid')
+        setValidationMessage(`❌ API 服务器错误，状态码: ${response.status}`)
+        return
+      }
+
+      // 对于 200 OK 响应，还要检查响应内容
+      const contentType = response.headers.get('content-type')
+      if (!contentType || !contentType.includes('application/json')) {
+        setValidationStatus('invalid')
+        setValidationMessage('❌ API 返回了非 JSON 格式的数据，请检查 API 地址配置')
+        return
+      }
+
+      // 尝试解析响应体
+      const data = await response.json()
+
+      // 检查响应体中的 code 字段
+      if (data.code === 1001) {
+        // code 1001 表示 token 失效
+        setValidationStatus('invalid')
+        setValidationMessage(`❌ Token 已失效: ${data.message || 'User session has expired or been logged out'}`)
+        return
+      }
+
+      // 检查 success 字段
+      if (data.success === false) {
+        setValidationStatus('invalid')
+        setValidationMessage(`❌ API 返回错误: ${data.message || 'Unknown error'} (code: ${data.code})`)
+        return
+      }
+
+      // Token 有效
+      setValidationStatus('valid')
+      setValidationMessage('✅ Token 有效，可以正常使用')
     } catch (error: any) {
       if (error.name === 'AbortError') {
         setValidationStatus('invalid')

@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
-import { X, Plus } from 'lucide-react'
+import { X, Plus, Trash2 } from 'lucide-react'
 import { supabase as supabaseClient } from '@/lib/supabase/client'
 
 interface TestCaseFormProps {
@@ -40,13 +40,21 @@ export function TestCaseForm({ testCase, modules, onSuccess, onCancel }: TestCas
     description: testCase?.description || '',
     module_id: testCase?.module_id || '',
     tags: testCase?.tags || [],
-    headers: parseJsonField(testCase?.headers),
-    request_body: parseJsonField(testCase?.request_body),
-    variables: parseJsonField(testCase?.variables),
+    headers: parseJsonField(testCase?.headers) || null,
+    request_body: parseJsonField(testCase?.request_body) || null,
+    variables: parseJsonField(testCase?.variables) || null,
+    validation_rules: parseJsonField(testCase?.validation_rules) || null,
     level: testCase?.level || 'P2',
     is_active: testCase?.is_active !== undefined ? testCase.is_active : true
   })
   const [newTag, setNewTag] = useState('')
+
+  // 新验证规则的状态
+  const [newValidationRule, setNewValidationRule] = useState({
+    path: '',
+    operator: 'equals',
+    value: ''
+  })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -58,13 +66,16 @@ export function TestCaseForm({ testCase, modules, onSuccess, onCancel }: TestCas
         ...formData,
         headers: typeof formData.headers === 'string'
           ? formData.headers
-          : JSON.stringify(formData.headers || {}),
+          : (formData.headers ? JSON.stringify(formData.headers) : null),
         request_body: typeof formData.request_body === 'string'
           ? formData.request_body
-          : JSON.stringify(formData.request_body || {}),
-        variables: formData.variables
-          ? (typeof formData.variables === 'string' ? formData.variables : JSON.stringify(formData.variables))
-          : null
+          : (formData.request_body ? JSON.stringify(formData.request_body) : null),
+        variables: typeof formData.variables === 'string'
+          ? formData.variables
+          : (formData.variables ? JSON.stringify(formData.variables) : null),
+        validation_rules: typeof formData.validation_rules === 'string'
+          ? formData.validation_rules
+          : (formData.validation_rules ? JSON.stringify(formData.validation_rules) : null)
       }
 
       const { error } = testCase
@@ -97,6 +108,54 @@ export function TestCaseForm({ testCase, modules, onSuccess, onCancel }: TestCas
 
   const removeTag = (tag: string) => {
     setFormData({ ...formData, tags: formData.tags.filter((t: string) => t !== tag) })
+  }
+
+  // 添加验证规则
+  const addValidationRule = () => {
+    if (!newValidationRule.path || !newValidationRule.value) {
+      alert('请填写完整的验证规则（字段路径和期望值）')
+      return
+    }
+
+    // 尝试解析值类型（数字、布尔值等）
+    let parsedValue = newValidationRule.value
+    if (parsedValue === 'true') parsedValue = true
+    else if (parsedValue === 'false') parsedValue = false
+    else if (!isNaN(Number(parsedValue))) parsedValue = Number(parsedValue)
+
+    const newRule = {
+      path: newValidationRule.path,
+      operator: newValidationRule.operator,
+      value: parsedValue
+    }
+
+    // 初始化或更新 validation_rules
+    const currentRules = formData.validation_rules || { type: 'json_path', checks: [] }
+    const updatedRules = {
+      ...currentRules,
+      checks: [...(currentRules.checks || []), newRule]
+    }
+
+    setFormData({ ...formData, validation_rules: updatedRules })
+
+    // 清空输入
+    setNewValidationRule({ path: '', operator: 'equals', value: '' })
+  }
+
+  // 删除验证规则
+  const removeValidationRule = (index: number) => {
+    if (!formData.validation_rules || !formData.validation_rules.checks) return
+
+    const updatedRules = {
+      ...formData.validation_rules,
+      checks: formData.validation_rules.checks.filter((_: any, i: number) => i !== index)
+    }
+
+    // 如果没有规则了，设置为 null
+    setFormData({
+      ...formData,
+      validation_rules: updatedRules.checks.length > 0 ? updatedRules : null
+    })
   }
 
   return (
@@ -219,6 +278,205 @@ export function TestCaseForm({ testCase, modules, onSuccess, onCancel }: TestCas
               placeholder="测试用例描述"
               rows={3}
             />
+          </div>
+
+          {/* Headers */}
+          <div>
+            <Label htmlFor="headers">请求头 (Headers - JSON格式)</Label>
+            <Textarea
+              id="headers"
+              value={(() => {
+                if (!formData.headers) return ''
+                if (typeof formData.headers === 'string') return formData.headers
+                const json = JSON.stringify(formData.headers, null, 2)
+                return json === '{}' ? '' : json
+              })()}
+              onChange={(e) => {
+                const value = e.target.value.trim()
+                if (!value) {
+                  setFormData({ ...formData, headers: null })
+                } else {
+                  try {
+                    const parsed = JSON.parse(value)
+                    setFormData({ ...formData, headers: parsed })
+                  } catch {
+                    setFormData({ ...formData, headers: value })
+                  }
+                }
+              }}
+              placeholder='{"Content-Type": "application/json", "Accept": "application/json"}'
+              rows={4}
+              className="font-mono text-sm"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              留空则使用默认 headers（包含 Authorization 和 Accept-Language）
+            </p>
+          </div>
+
+          {/* Request Body */}
+          <div>
+            <Label htmlFor="request_body">请求体 (Request Body - JSON格式)</Label>
+            <Textarea
+              id="request_body"
+              value={(() => {
+                if (!formData.request_body) return ''
+                if (typeof formData.request_body === 'string') return formData.request_body
+                const json = JSON.stringify(formData.request_body, null, 2)
+                return json === '{}' ? '' : json
+              })()}
+              onChange={(e) => {
+                const value = e.target.value.trim()
+                if (!value) {
+                  setFormData({ ...formData, request_body: null })
+                } else {
+                  try {
+                    const parsed = JSON.parse(value)
+                    setFormData({ ...formData, request_body: parsed })
+                  } catch {
+                    setFormData({ ...formData, request_body: value })
+                  }
+                }
+              }}
+              placeholder='{"key": "value"}'
+              rows={6}
+              className="font-mono text-sm"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              GET 请求通常不需要请求体，留空则发送空对象 {}
+            </p>
+          </div>
+
+          {/* Variables (可选) */}
+          <div>
+            <Label htmlFor="variables">变量 (Variables - JSON格式，可选)</Label>
+            <Textarea
+              id="variables"
+              value={(() => {
+                if (!formData.variables) return ''
+                if (typeof formData.variables === 'string') return formData.variables
+                const json = JSON.stringify(formData.variables, null, 2)
+                return json === '{}' ? '' : json
+              })()}
+              onChange={(e) => {
+                const value = e.target.value.trim()
+                if (!value) {
+                  setFormData({ ...formData, variables: null })
+                } else {
+                  try {
+                    const parsed = JSON.parse(value)
+                    setFormData({ ...formData, variables: parsed })
+                  } catch {
+                    setFormData({ ...formData, variables: value })
+                  }
+                }
+              }}
+              placeholder='{"userId": "123"}'
+              rows={3}
+              className="font-mono text-sm"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              可选：变量会合并到请求体中
+            </p>
+          </div>
+
+          {/* Validation Rules */}
+          <div>
+            <Label>验证规则 (Validation Rules - 可选)</Label>
+            <p className="text-xs text-muted-foreground mb-3">
+              用于检查响应内容的字段值。留空则只验证状态码
+            </p>
+
+            {/* 显示已添加的验证规则 */}
+            {formData.validation_rules && formData.validation_rules.checks && formData.validation_rules.checks.length > 0 && (
+              <div className="space-y-2 mb-3">
+                {formData.validation_rules.checks.map((check: any, index: number) => (
+                  <div key={index} className="flex items-center gap-2 p-3 bg-muted rounded-md">
+                    <span className="text-sm font-mono flex-1">
+                      <span className="font-semibold">{check.path}</span>
+                      {' '}
+                      <span className="text-muted-foreground">
+                        {check.operator === 'equals' && '等于'}
+                        {check.operator === 'contains' && '包含'}
+                        {check.operator === 'not_contains' && '不包含'}
+                        {check.operator === 'gt' && '大于'}
+                        {check.operator === 'lt' && '小于'}
+                        {check.operator === 'gte' && '大于等于'}
+                        {check.operator === 'lte' && '小于等于'}
+                      </span>
+                      {' '}
+                      <span className="font-semibold">{String(check.value)}</span>
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeValidationRule(index)}
+                      className="h-8 w-8 p-0"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* 添加新的验证规则 */}
+            <div className="grid gap-3 md:grid-cols-4 items-end p-4 border rounded-md bg-muted/50">
+              <div>
+                <Label htmlFor="new_rule_field" className="text-xs">字段路径</Label>
+                <Input
+                  id="new_rule_field"
+                  value={newValidationRule.path}
+                  onChange={(e) => setNewValidationRule({ ...newValidationRule, path: e.target.value })}
+                  placeholder="如: $.code"
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="new_rule_operator" className="text-xs">操作符</Label>
+                <select
+                  id="new_rule_operator"
+                  value={newValidationRule.operator}
+                  onChange={(e) => setNewValidationRule({ ...newValidationRule, operator: e.target.value })}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1"
+                >
+                  <option value="equals">等于</option>
+                  <option value="contains">包含</option>
+                  <option value="not_contains">不包含</option>
+                  <option value="gt">大于</option>
+                  <option value="lt">小于</option>
+                  <option value="gte">大于等于</option>
+                  <option value="lte">小于等于</option>
+                </select>
+              </div>
+
+              <div>
+                <Label htmlFor="new_rule_value" className="text-xs">期望值</Label>
+                <Input
+                  id="new_rule_value"
+                  value={newValidationRule.value}
+                  onChange={(e) => setNewValidationRule({ ...newValidationRule, value: e.target.value })}
+                  placeholder="如: 200"
+                  className="mt-1"
+                />
+              </div>
+
+              <Button
+                type="button"
+                onClick={addValidationRule}
+                variant="outline"
+                size="default"
+                className="mb-0"
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                添加规则
+              </Button>
+            </div>
+
+            <p className="text-xs text-muted-foreground mt-2">
+              💡 提示：字段路径支持 JSON Path 格式，如 <code className="bg-muted px-1 rounded">$.code</code>、<code className="bg-muted px-1 rounded">$.success</code>、<code className="bg-muted px-1 rounded">$.data.user.id</code>
+            </p>
           </div>
 
           {/* 标签 */}

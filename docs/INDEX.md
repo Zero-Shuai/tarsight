@@ -23,6 +23,14 @@
 ### 📖 项目结构
 - **[项目结构说明](FINAL_STRUCTURE.md)** - 详细的目录结构说明
 
+### 📝 开发日志
+- **[2026-01-04 开发日志](development/logs/DAILY_LOG_2026-01-04.md)** - 业务验证逻辑修复和前端优化
+- **[前端更新记录](development/FRONTEND_UPDATE.md)** - 前端响应信息展示优化
+- **[最终更新说明](development/FINAL_UPDATE.md)** - 最终实现总结
+- **[Response Body 布局](development/RESPONSE_BODY_LAYOUT.md)** - Response Body 展示结构
+- **[Response Body 最终版](development/RESPONSE_BODY_FINAL.md)** - Response Body 完整规范
+- **[基于验证规则的标红（已废弃）](development/VALIDATION_BASED_HIGHLIGHT.md)** - 历史方案记录
+
 ### 🎯 指南和教程
 - **[认证设置指南](guides/AUTHENTICATION_SETUP.md)** - 用户认证配置
 - **[登录修复指南](guides/LOGIN_FIX_COMPLETE.md)** - 登录问题解决
@@ -63,4 +71,5 @@
 | 架构文档 | 3 | architecture/ |
 | 故障排查 | 5 | troubleshooting/ |
 | 指南教程 | 5 | guides/ |
-| **总计** | **15** | - |
+| 开发日志 | 6 | development/ |
+| **总计** | **21** | - |
