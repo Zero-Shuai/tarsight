@@ -257,7 +257,7 @@ export class TestExecutionQueue {
       console.log(`[${new Date().toISOString()}] 开始执行测试: ${executionId}`)
       console.log(`[${new Date().toISOString()}] 执行命令: ${command}`)
 
-      const child = spawn('/bin/bash', ['-c', command], {
+      const child = spawn('/bin/sh', ['-c', command], {
         env: { ...process.env, EXECUTION_ID: executionId }
       })
 
