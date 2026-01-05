@@ -62,6 +62,7 @@ export type TestExecution = {
   skipped_tests?: number
   total_duration?: number
   status: 'running' | 'completed' | 'failed'
+  user_id?: string
   started_at: string
   completed_at?: string
   created_at: string
