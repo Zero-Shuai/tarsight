@@ -289,10 +289,11 @@ export function QueueConfigForm({ onUpdate }: QueueConfigFormProps) {
                 {clearing ? '清空中...' : '清空队列'}
               </Button>
               <Button
-                variant="destructive"
+                variant="outline"
                 size="sm"
                 onClick={handleResetQueue}
                 disabled={resetting}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50"
               >
                 <AlertTriangle className="h-4 w-4 mr-2" />
                 {resetting ? '重置中...' : '重置状态'}
