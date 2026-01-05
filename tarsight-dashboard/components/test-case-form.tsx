@@ -61,6 +61,12 @@ export function TestCaseForm({ testCase, modules, onSuccess, onCancel }: TestCas
     setLoading(true)
 
     try {
+      // 获取当前用户信息
+      const { data: { user }, error: userError } = await supabaseClient.auth.getUser()
+      if (userError || !user) {
+        throw new Error('无法获取用户信息，请重新登录')
+      }
+
       // 处理数据：将对象字段转换为 JSON 字符串
       const processedFormData = {
         ...formData,
@@ -87,7 +93,8 @@ export function TestCaseForm({ testCase, modules, onSuccess, onCancel }: TestCas
             .from('test_cases')
             .insert({
               ...processedFormData,
-              project_id: process.env.NEXT_PUBLIC_PROJECT_ID
+              project_id: process.env.NEXT_PUBLIC_PROJECT_ID,
+              user_id: user.id
             })
 
       if (error) throw error

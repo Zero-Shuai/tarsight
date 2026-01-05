@@ -44,6 +44,7 @@ export type TestCase = {
   tags?: string[]
   level: string
   is_active: boolean
+  user_id?: string
   created_at: string
   updated_at?: string
 }
