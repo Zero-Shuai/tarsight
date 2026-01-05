@@ -118,7 +118,7 @@ export function TestCaseForm({ testCase, modules, onSuccess, onCancel }: TestCas
     }
 
     // 尝试解析值类型（数字、布尔值等）
-    let parsedValue = newValidationRule.value
+    let parsedValue: string | boolean | number = newValidationRule.value
     if (parsedValue === 'true') parsedValue = true
     else if (parsedValue === 'false') parsedValue = false
     else if (!isNaN(Number(parsedValue))) parsedValue = Number(parsedValue)
