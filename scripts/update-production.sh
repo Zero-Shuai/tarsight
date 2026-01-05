@@ -1,6 +1,7 @@
 #!/bin/bash
-# Tarsight 生产环境自动更新脚本 v2.0
-# 改进：添加类型检查选项、健康检查验证、更好的错误处理
+# Tarsight 生产环境自动更新脚本 v2.1
+# 改进：自动检测和处理本地文件修改冲突
+#       添加交互式选择：放弃修改/暂存修改/取消更新
 # 使用方法: sudo bash update-production.sh [--no-lint] [--skip-health-check]
 
 set -e  # 遇到错误立即退出
@@ -52,7 +53,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 echo -e "${BLUE}========================================${NC}"
-echo -e "${BLUE}  Tarsight 生产环境更新脚本 v2.0${NC}"
+echo -e "${BLUE}  Tarsight 生产环境更新脚本 v2.1${NC}"
 echo -e "${BLUE}  方案: 零停机更新${NC}"
 echo -e "${BLUE}  时间: $(date)${NC}"
 if [ "$NO_LINT" = true ]; then
@@ -113,9 +114,66 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     exit 0
 fi
 
+# 检查并处理本地修改
+if ! git diff --quiet || ! git diff --cached --quiet; then
+    echo -e "${YELLOW}⚠ 检测到本地文件修改${NC}"
+
+    # 显示修改的文件
+    echo "修改的文件:"
+    git status --short
+
+    echo ""
+    echo -e "${YELLOW}选择处理方式:${NC}"
+    echo "  1) 放弃本地修改，使用远程版本（推荐）"
+    echo "  2) 暂存本地修改（stash），更新后再恢复"
+    echo "  3) 取消更新，手动处理"
+
+    read -p "请选择 (1/2/3): " -n 1 -r
+    echo
+
+    case $REPLY in
+        1)
+            echo -e "${YELLOW}正在放弃本地修改...${NC}"
+            git reset --hard HEAD
+            git clean -fd
+            echo -e "${GREEN}✓ 本地修改已清除${NC}"
+            ;;
+        2)
+            echo -e "${YELLOW}正在暂存本地修改...${NC}"
+            git stash push -m "Auto-stash before update on $(date)"
+            echo -e "${GREEN}✓ 本地修改已暂存${NC}"
+            echo -e "${YELLOW}如需恢复，执行: git stash pop${NC}"
+            ;;
+        3)
+            echo -e "${RED}❌ 更新已取消${NC}"
+            echo -e "${YELLOW}提示: 手动处理本地修改后重新运行脚本${NC}"
+            exit 0
+            ;;
+        *)
+            echo -e "${RED}❌ 无效选择${NC}"
+            exit 1
+            ;;
+    esac
+    echo ""
+fi
+
 git pull origin master
 echo -e "${GREEN}✓ 代码更新完成${NC}"
 echo ""
+
+# 如果之前使用了 stash，尝试自动恢复
+if git stash list | grep "Auto-stash before update" > /dev/null 2>&1; then
+    echo -e "${YELLOW}检测到之前的暂存，是否恢复? (y/n)${NC}"
+    read -p "" -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        git stash pop
+        echo -e "${GREEN}✓ 暂存已恢复${NC}"
+    else
+        echo -e "${YELLOW}暂存保留，可稍后手动恢复: git stash pop${NC}"
+    fi
+    echo ""
+fi || true  # 即使 grep 没找到也不算错误
 
 # 4. 处理类型检查选项
 if [ "$NO_LINT" = true ]; then
