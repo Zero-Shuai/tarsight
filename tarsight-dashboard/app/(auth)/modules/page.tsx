@@ -14,6 +14,7 @@ interface Module {
   id: string
   project_id: string
   name: string
+  module_code: string
   description: string
   created_at: string
 }
@@ -28,6 +29,7 @@ function ModuleForm({ module, onSuccess, onCancel }: ModuleFormProps) {
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     name: module?.name || '',
+    module_code: module?.module_code || '',
     description: module?.description || ''
   })
 
@@ -79,6 +81,26 @@ function ModuleForm({ module, onSuccess, onCancel }: ModuleFormProps) {
                 required
                 placeholder="例如: 用户管理"
               />
+            </div>
+
+            <div>
+              <Label htmlFor="module_code">模块编号 *</Label>
+              <Input
+                id="module_code"
+                value={formData.module_code}
+                onChange={(e) => {
+                  // 保持用户输入的大小写
+                  const value = e.target.value
+                  setFormData({ ...formData, module_code: value })
+                }}
+                required
+                placeholder="例如: MOD, Module, ModuleA, TEST-099"
+                pattern="^[A-Za-z][A-Za-z0-9]{0,19}$"
+                title="1-20位字符，必须以字母开头"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                1-20位字符，必须以字母开头，可包含数字
+              </p>
             </div>
 
             <div>
@@ -217,7 +239,10 @@ export default function ModulesPage() {
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <CardTitle className="text-lg">{module.name}</CardTitle>
+                    <div className="flex items-center gap-2">
+                      <CardTitle className="text-lg">{module.name}</CardTitle>
+                      <Badge variant="secondary">{module.module_code || '未设置'}</Badge>
+                    </div>
                     <CardDescription className="mt-2">
                       {module.description || '暂无描述'}
                     </CardDescription>

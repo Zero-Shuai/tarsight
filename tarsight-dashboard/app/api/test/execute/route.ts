@@ -18,12 +18,30 @@ export async function POST(request: NextRequest) {
   console.log('时间:', new Date().toISOString())
 
   try {
-    const { test_case_ids, case_ids, mode = 'full' } = await request.json()
-    console.log('接收到的参数:', { test_case_ids, case_ids, mode })
+    const {
+      test_case_ids,  // 用于 specific 模式
+      case_ids,       // 业务ID数组
+      mode = 'full',  // 执行模式：full | simple
+      // 新增参数
+      execution_type = 'specific',  // 执行类型：specific | all | modules | levels
+      module_ids,                 // 模块ID列表（modules 模式）
+      module_names,               // 模块名称列表（便于显示）
+      levels                      // 等级列表（levels 模式，如 ['P0','P1']）
+    } = await request.json()
+
+    console.log('接收到的参数:', {
+      execution_type,
+      module_ids,
+      module_names,
+      levels,
+      test_case_ids,
+      case_ids,
+      mode
+    })
 
     // 参数验证
-    if (!test_case_ids || !Array.isArray(test_case_ids) || test_case_ids.length === 0) {
-      return NextResponse.json({ error: '请提供要执行的测试用例ID' }, { status: 400 })
+    if (!execution_type) {
+      return NextResponse.json({ error: '请指定执行模式' }, { status: 400 })
     }
 
     // 生成请求缓存键（基于测试用例ID和模式）
@@ -59,20 +77,90 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient()
     const projectId = process.env.NEXT_PUBLIC_PROJECT_ID
 
-    // 获取测试用例信息
-    const { data: testCases, error: tcError } = await supabase
-      .from('test_cases')
-      .select('*')
-      .in('id', test_case_ids)
-      .eq('is_active', true)
+    // 根据执行类型获取测试用例
+    let selectedCaseIds: string[] = []
+    let testCases: any[] = []
 
-    if (tcError) throw tcError
-    if (!testCases || testCases.length === 0) {
-      return NextResponse.json({ error: '未找到有效的测试用例' }, { status: 404 })
+    switch (execution_type) {
+      case 'specific':
+        // 单个或多个指定用例
+        if (!test_case_ids || test_case_ids.length === 0) {
+          return NextResponse.json({ error: '请指定要执行的测试用例' }, { status: 400 })
+        }
+        selectedCaseIds = test_case_ids
+
+        const { data: specificCases, error: specificError } = await supabase
+          .from('test_cases')
+          .select('*')
+          .in('id', selectedCaseIds)
+          .eq('is_active', true)
+
+        if (specificError) throw specificError
+        testCases = specificCases || []
+        break
+
+      case 'all':
+        // 全部用例
+        const { data: allCases, error: allError } = await supabase
+          .from('test_cases')
+          .select('id, case_id')
+          .eq('is_active', true)
+
+        if (allError) throw allError
+        testCases = allCases || []
+        selectedCaseIds = testCases.map(c => c.id)
+        break
+
+      case 'modules':
+        // 多模块用例
+        if (!module_ids || module_ids.length === 0) {
+          return NextResponse.json({ error: '请选择要执行的模块' }, { status: 400 })
+        }
+
+        const { data: moduleCases, error: moduleError } = await supabase
+          .from('test_cases')
+          .select('id, case_id, module_id, modules(name)')
+          .in('module_id', module_ids)
+          .eq('is_active', true)
+
+        if (moduleError) throw moduleError
+        testCases = moduleCases || []
+        selectedCaseIds = testCases.map(c => c.id)
+        break
+
+      case 'levels':
+        // 按等级用例
+        if (!levels || levels.length === 0) {
+          return NextResponse.json({ error: '请选择要执行的等级' }, { status: 400 })
+        }
+
+        const { data: levelCases, error: levelError } = await supabase
+          .from('test_cases')
+          .select('id, case_id, level')
+          .in('level', levels)
+          .eq('is_active', true)
+
+        if (levelError) throw levelError
+        testCases = levelCases || []
+        selectedCaseIds = testCases.map(c => c.id)
+        break
+
+      default:
+        return NextResponse.json({ error: '无效的执行类型' }, { status: 400 })
+    }
+
+    if (selectedCaseIds.length === 0) {
+      return NextResponse.json({ error: '未找到符合条件的测试用例' }, { status: 404 })
     }
 
     // 创建执行记录
-    const executionName = `手动执行 - ${new Date().toLocaleString('zh-CN')}`
+    const executionTypeNames = {
+      'specific': '指定用例',
+      'all': '全部用例',
+      'modules': `模块(${module_names?.join(',') || module_ids?.join(',')})`,
+      'levels': `等级(${levels?.join(',')})`
+    }
+    const executionName = `${executionTypeNames[execution_type]}执行 - ${new Date().toLocaleString('zh-CN')}`
     console.log(`[${new Date().toISOString()}] 准备创建执行记录: ${executionName}`)
 
     const { data: execution, error: execError } = await supabase
@@ -80,7 +168,7 @@ export async function POST(request: NextRequest) {
       .insert({
         project_id: projectId,
         execution_name: executionName,
-        total_tests: testCases.length,
+        total_tests: selectedCaseIds.length,
         started_at: new Date().toISOString(),
         status: 'running'
       })
@@ -106,8 +194,31 @@ export async function POST(request: NextRequest) {
     const testCaseArgs = case_ids || testCases.map(tc => tc.case_id)
     const caseIdsStr = testCaseArgs.join(',')
 
-    // 构建执行命令（使用前端专用脚本，传入 USER_ID）
-    const command = `cd ${projectRoot} && DATA_SOURCE=supabase EXECUTION_ID="${execution.id}" CASE_IDS="${caseIdsStr}" TARGET_PROJECT="${projectId}" USER_ID="${userId}" ${pythonCmd} execute_test.py`
+    // 构建模块名称和等级的环境变量
+    const moduleNamesStr = module_names?.join(',') || ''
+    const levelsStr = levels?.join(',') || ''
+
+    // 构建环境变量
+    const envVars = [
+      `DATA_SOURCE=supabase`,
+      `EXECUTION_ID="${execution.id}"`,
+      `CASE_IDS="${caseIdsStr}"`,
+      `TARGET_PROJECT="${projectId}"`,
+      `USER_ID="${userId}"`
+    ]
+
+    // 添加模块过滤环境变量（如果有）
+    if (moduleNamesStr) {
+      envVars.push(`TARGET_MODULES="${moduleNamesStr}"`)
+    }
+
+    // 添加等级过滤环境变量（如果有）
+    if (levelsStr) {
+      envVars.push(`TARGET_LEVELS="${levelsStr}"`)
+    }
+
+    // 构建执行命令
+    const command = `cd ${projectRoot} && ${envVars.join(' ')} ${pythonCmd} execute_test.py`
 
     // 日志
     console.log('=== 开始执行测试 ===')

@@ -56,13 +56,15 @@ export function Sidebar() {
   const pathname = usePathname()
 
   return (
-    <div className="flex h-screen w-64 flex-col border-r bg-gray-50">
-      <div className="flex h-16 items-center border-b border-gray-200 px-6 bg-white">
-        <h1 className="text-xl font-bold text-gray-900">Tarsight</h1>
+    <div className="flex h-screen w-64 flex-col bg-[#0f172a]/95 backdrop-blur-sm border-r border-white/10">
+      {/* Logo 区域 */}
+      <div className="flex h-16 items-center border-b border-white/10 px-6 bg-[#0f172a]/50 backdrop-blur-sm">
+        <h1 className="text-2xl font-bold text-white tracking-tight">Tarsight</h1>
       </div>
 
-      <nav className="flex-1 space-y-1 p-4 overflow-y-auto">
-        <div className="mb-4 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+      {/* 导航菜单 */}
+      <nav className="flex-1 space-y-0.5 p-4 overflow-y-auto">
+        <div className="mb-5 px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">
           主菜单
         </div>
         {navItems.map((item) => {
@@ -74,21 +76,27 @@ export function Sidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all',
+                'group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
                 isActive
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-gray-700 hover:bg-gray-200'
+                  ? 'bg-blue-600/10 text-blue-400'
+                  : 'text-slate-400 hover:text-slate-100 hover:bg-white/5'
               )}
             >
-              <Icon className="h-5 w-5" />
-              {item.title}
+              {/* 激活态的左侧蓝色亮条 */}
+              {isActive && (
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-0.5 bg-blue-400 rounded-full" />
+              )}
+
+              <Icon className="h-5 w-5 flex-shrink-0" />
+              <span className="flex-1">{item.title}</span>
             </Link>
           )
         })}
       </nav>
 
-      <div className="border-t border-gray-200 p-4 bg-white">
-        <div className="mb-2 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+      {/* 底部用户区域 */}
+      <div className="border-t border-white/10 p-4 bg-[#0f172a]/50 backdrop-blur-sm">
+        <div className="mb-4 px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">
           账户
         </div>
         <UserMenu />

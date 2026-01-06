@@ -52,16 +52,32 @@ class TestTarsightTable:
 
         # 检查是否需要按模块过滤（通过环境变量）
         import os
+        # 1. 多模块过滤（新增）
+        target_modules = os.environ.get('TARGET_MODULES')
+        if target_modules:
+            target_module_list = [m.strip() for m in target_modules.split(',')]
+            if module_name not in target_module_list:
+                pytest.skip(f"跳过非指定模块的测试用例 (当前: {module_name}, 目标: {target_modules})")
+
+        # 2. 向后兼容单模块过滤
         target_module = os.environ.get('TARGET_MODULE')
         if target_module and module_name != target_module:
             pytest.skip(f"跳过非目标模块 '{target_module}' 的测试用例")
 
-        # 检查是否需要按用例ID过滤（通过环境变量）
+        # 3. 用例ID过滤
         target_case_ids = os.environ.get('TARGET_CASE_IDS')
         if target_case_ids:
             target_ids = [cid.strip() for cid in target_case_ids.split(',')]
             if case_id not in target_ids:
                 pytest.skip(f"跳过非指定用例ID '{case_id}' 的测试")
+
+        # 4. 等级过滤（新增）
+        target_levels = os.environ.get('TARGET_LEVELS')
+        if target_levels:
+            target_level_list = [l.strip() for l in target_levels.split(',')]
+            test_case_level = test_case.get('level', 'P3')  # 默认P3
+            if test_case_level not in target_level_list:
+                pytest.skip(f"跳过非指定等级 '{test_case_level}' 的测试用例 (目标: {target_levels})")
 
         allure.dynamic.title(f"[{module_name}] {case_id} - {test_case['test_name']}")
         allure.dynamic.description(test_case['description'])

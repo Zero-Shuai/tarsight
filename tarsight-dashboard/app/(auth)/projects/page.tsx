@@ -3,12 +3,19 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { Eye, EyeOff, Key, Save, RefreshCw, ShieldCheck, CheckCircle, XCircle, Loader2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
+import type { Project } from '@/lib/types/database'
 
 interface ProjectConfig {
   id: string
   project_id: string
+  project_code: string
+  name: string
+  description?: string
   base_url: string
   api_token: string
   updated_at: string
@@ -25,6 +32,13 @@ export default function ProjectsPage() {
   const [validationStatus, setValidationStatus] = useState<ValidationStatus>('idle')
   const [validationMessage, setValidationMessage] = useState<string>('')
 
+  // 编辑模式状态
+  const [projectEditMode, setProjectEditMode] = useState(false)
+  const [tokenEditMode, setTokenEditMode] = useState(false)
+
+  // 权限检查（预留接口）
+  const canEditProject = true  // TODO: 从用户权限中获取
+
   // 加载配置
   const loadConfig = async () => {
     setIsLoading(true)
@@ -37,11 +51,22 @@ export default function ProjectsPage() {
         throw new Error('未登录或用户信息获取失败')
       }
 
-      // 从环境变量或用户配置加载
-      const projectId = '8786c21f-7437-4a2d-8486-9365a382b38e'
-      const baseUrl = 'https://t-stream-iq.tarsv.com'
+      // 从环境变量读取默认项目ID
+      const projectId = process.env.NEXT_PUBLIC_PROJECT_ID || '8786c21f-7437-4a2d-8486-9365a382b38e'
 
-      // 尝试从数据库加载 API Token（如果有的话）
+      // 从数据库加载项目信息
+      const { data: project, error: projectError } = await supabase
+        .from('projects')
+        .select('*')
+        .eq('id', projectId)
+        .single()
+
+      if (projectError) {
+        console.error('获取项目信息失败:', projectError)
+        throw new Error('获取项目信息失败: ' + projectError.message)
+      }
+
+      // 尝试从数据库加载 API Token
       let apiToken = ''
       try {
         const { data: tokenData, error: tokenError } = await supabase
@@ -51,7 +76,6 @@ export default function ProjectsPage() {
           .single()
 
         if (tokenError) {
-          // 如果是 PGRST116 错误（没有找到记录），这是正常的，用户还没有保存过 token
           if (tokenError.code !== 'PGRST116') {
             console.warn('获取 token 数据失败:', tokenError)
           }
@@ -60,15 +84,17 @@ export default function ProjectsPage() {
         }
       } catch (err) {
         console.warn('查询 user_configs 时出错:', err)
-        // 继续执行，只是 token 为空
       }
 
       setConfig({
         id: user.id,
         project_id: projectId,
-        base_url: baseUrl,
+        project_code: project.project_code || '',
+        name: project.name || '',
+        description: project.description || '',
+        base_url: project.base_url || '',
         api_token: apiToken,
-        updated_at: new Date().toISOString()
+        updated_at: project.updated_at || new Date().toISOString()
       })
     } catch (error: any) {
       console.error('加载配置失败:', error)
@@ -78,8 +104,30 @@ export default function ProjectsPage() {
     }
   }
 
-  // 保存配置
-  const handleSave = async () => {
+  // 重新加载
+  const handleRefresh = () => {
+    loadConfig()
+  }
+
+  // 进入项目编辑模式
+  const handleEnterProjectEdit = () => {
+    if (!canEditProject) {
+      setMessage({ type: 'error', text: '您没有权限编辑项目信息' })
+      return
+    }
+    setProjectEditMode(true)
+    setMessage(null)
+  }
+
+  // 取消项目编辑
+  const handleCancelProjectEdit = () => {
+    setProjectEditMode(false)
+    // 重新加载数据以恢复原始值
+    loadConfig()
+  }
+
+  // 完成项目编辑
+  const handleCompleteProjectEdit = async () => {
     if (!config) return
 
     setIsSaving(true)
@@ -91,35 +139,84 @@ export default function ProjectsPage() {
         throw new Error('未登录或用户信息获取失败')
       }
 
-      // 保存或更新配置
-      const { error } = await supabase
-        .from('user_configs')
-        .upsert({
-          user_id: user.id,
-          api_token: config.api_token,
+      // 只保存项目信息
+      const { error: projectError } = await supabase
+        .from('projects')
+        .update({
+          project_code: config.project_code,
+          name: config.name,
+          description: config.description,
+          base_url: config.base_url,
           updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'user_id'  // 指定冲突列为 user_id
         })
+        .eq('id', config.project_id)
 
-      if (error) {
-        console.error('保存配置数据库错误:', error)
-        throw error
+      if (projectError) {
+        console.error('保存项目信息失败:', projectError)
+        throw new Error('保存项目信息失败: ' + projectError.message)
       }
 
-      setMessage({ type: 'success', text: '配置保存成功！' })
+      setProjectEditMode(false)
+      setMessage({ type: 'success', text: '项目信息保存成功！' })
       setTimeout(() => setMessage(null), 3000)
     } catch (error: any) {
-      console.error('保存配置失败:', error)
+      console.error('保存项目信息失败:', error)
       setMessage({ type: 'error', text: '保存失败: ' + error.message })
     } finally {
       setIsSaving(false)
     }
   }
 
-  // 重新加载
-  const handleRefresh = () => {
+  // 进入 Token 编辑模式
+  const handleEnterTokenEdit = () => {
+    setTokenEditMode(true)
+    setMessage(null)
+  }
+
+  // 取消 Token 编辑
+  const handleCancelTokenEdit = () => {
+    setTokenEditMode(false)
     loadConfig()
+  }
+
+  // 完成 Token 编辑（保存 Token）
+  const handleCompleteTokenEdit = async () => {
+    if (!config) return
+
+    setIsSaving(true)
+    setMessage(null)
+
+    try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      if (userError || !user) {
+        throw new Error('未登录或用户信息获取失败')
+      }
+
+      // 只保存 Token
+      const { error: tokenError } = await supabase
+        .from('user_configs')
+        .upsert({
+          user_id: user.id,
+          api_token: config.api_token,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id'
+        })
+
+      if (tokenError) {
+        console.warn('保存 Token 失败:', tokenError)
+        throw new Error('保存 Token 失败: ' + tokenError.message)
+      }
+
+      setTokenEditMode(false)
+      setMessage({ type: 'success', text: 'Token 保存成功！' })
+      setTimeout(() => setMessage(null), 3000)
+    } catch (error: any) {
+      console.error('保存 Token 失败:', error)
+      setMessage({ type: 'error', text: '保存失败: ' + error.message })
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   // Token 有效性检测
@@ -254,36 +351,148 @@ export default function ProjectsPage() {
       {/* 项目基本信息 */}
       <Card>
         <CardHeader>
-          <CardTitle>项目信息</CardTitle>
-          <CardDescription>当前项目的配置信息（从环境变量读取）</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>项目信息</CardTitle>
+              <CardDescription>编辑项目的基本信息和编号</CardDescription>
+            </div>
+            {!projectEditMode && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleEnterProjectEdit}
+                disabled={!canEditProject}
+              >
+                编辑
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* 项目 UUID (只读) */}
           <div>
-            <label className="text-sm font-medium text-muted-foreground">项目 ID</label>
-            <div className="mt-1 p-3 bg-gray-50 border rounded-md font-mono text-sm break-all">
-              {config?.project_id || '未配置'}
-            </div>
+            <Label htmlFor="project_id">项目 UUID</Label>
+            <Input
+              id="project_id"
+              value={config?.project_id || ''}
+              disabled
+              className="bg-gray-50 font-mono text-sm"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              项目的唯一标识符（不可修改）
+            </p>
           </div>
 
+          {/* 项目编号 */}
           <div>
-            <label className="text-sm font-medium text-muted-foreground">API 基础 URL</label>
-            <div className="mt-1 p-3 bg-gray-50 border rounded-md font-mono text-sm break-all">
-              {config?.base_url || '未配置'}
-            </div>
+            <Label htmlFor="project_code">项目编号 *</Label>
+            <Input
+              id="project_code"
+              value={config?.project_code || ''}
+              onChange={(e) => {
+                const value = e.target.value
+                setConfig({ ...config!, project_code: value })
+              }}
+              disabled={!projectEditMode}
+              placeholder="例如: PRJ, Project, Project1, TEST-099"
+              pattern="^[A-Za-z][A-Za-z0-9]{0,19}$"
+              title="1-20位字符，必须以字母开头"
+              required
+              className={!projectEditMode ? 'bg-gray-50' : ''}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              1-20位字符，必须以字母开头，可包含数字
+            </p>
           </div>
+
+          {/* 项目名称 */}
+          <div>
+            <Label htmlFor="name">项目名称 *</Label>
+            <Input
+              id="name"
+              value={config?.name || ''}
+              onChange={(e) => setConfig({ ...config!, name: e.target.value })}
+              disabled={!projectEditMode}
+              placeholder="例如: Tarsight 测试项目"
+              required
+              className={!projectEditMode ? 'bg-gray-50' : ''}
+            />
+          </div>
+
+          {/* 项目描述 */}
+          <div>
+            <Label htmlFor="description">项目描述</Label>
+            <Textarea
+              id="description"
+              value={config?.description || ''}
+              onChange={(e) => setConfig({ ...config!, description: e.target.value })}
+              disabled={!projectEditMode}
+              placeholder="简要描述项目的用途和范围..."
+              rows={3}
+              className={!projectEditMode ? 'bg-gray-50' : ''}
+            />
+          </div>
+
+          {/* API 基础 URL */}
+          <div>
+            <Label htmlFor="base_url">API 基础 URL</Label>
+            <Input
+              id="base_url"
+              value={config?.base_url || ''}
+              onChange={(e) => setConfig({ ...config!, base_url: e.target.value })}
+              disabled={!projectEditMode}
+              placeholder="https://api.example.com"
+              className={!projectEditMode ? 'bg-gray-50' : ''}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              测试目标 API 的基础地址
+            </p>
+          </div>
+
+          {/* 编辑模式操作按钮 */}
+          {projectEditMode && (
+            <div className="flex justify-end gap-2 pt-4 border-t">
+              <Button
+                variant="outline"
+                onClick={handleCancelProjectEdit}
+                disabled={isSaving}
+              >
+                取消
+              </Button>
+              <Button
+                onClick={handleCompleteProjectEdit}
+                disabled={isSaving}
+              >
+                {isSaving ? '保存中...' : '完成'}
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
       {/* API Token 管理 */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Key className="h-5 w-5" />
-            API Token 管理
-          </CardTitle>
-          <CardDescription>
-            管理用于 API 测试的访问令牌，Token 将安全存储在数据库中
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Key className="h-5 w-5" />
+                API Token 管理
+              </CardTitle>
+              <CardDescription>
+                管理用于 API 测试的访问令牌，Token 将安全存储在数据库中
+              </CardDescription>
+            </div>
+            {!tokenEditMode && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleEnterTokenEdit}
+              >
+                编辑
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
@@ -300,12 +509,16 @@ export default function ProjectsPage() {
                     setValidationMessage('')
                   }}
                   placeholder="请输入 API Token"
-                  className="flex-1 px-3 py-2 border rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  disabled={!tokenEditMode}
+                  className={`flex-1 px-3 py-2 border rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    !tokenEditMode ? 'bg-gray-50' : ''
+                  }`}
                 />
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setShowToken(!showToken)}
+                  disabled={!tokenEditMode}
                   title={showToken ? '隐藏' : '显示'}
                 >
                   {showToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -374,25 +587,24 @@ export default function ProjectsPage() {
             </ul>
           </div>
 
-          <div className="flex justify-end">
-            <Button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="min-w-[100px]"
-            >
-              {isSaving ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
-                  保存中...
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4 mr-2" />
-                  保存配置
-                </>
-              )}
-            </Button>
-          </div>
+          {/* 编辑模式操作按钮 */}
+          {tokenEditMode && (
+            <div className="flex justify-end gap-2 pt-4 border-t">
+              <Button
+                variant="outline"
+                onClick={handleCancelTokenEdit}
+                disabled={isSaving}
+              >
+                取消
+              </Button>
+              <Button
+                onClick={handleCompleteTokenEdit}
+                disabled={isSaving}
+              >
+                {isSaving ? '保存中...' : '保存 Token'}
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 

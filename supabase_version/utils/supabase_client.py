@@ -443,6 +443,177 @@ class SupabaseClient:
             logger.error(f"❌ 更新执行记录时出错: {e}")
             return False
 
+    def get_test_cases_by_filters(
+        self,
+        project_id: str,
+        module_ids: Optional[List[str]] = None,
+        levels: Optional[List[str]] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        按模块和等级筛选测试用例
+
+        Args:
+            project_id: 项目ID
+            module_ids: 模块ID列表（可选）
+            levels: 等级列表（可选）
+
+        Returns:
+            符合条件的测试用例列表
+        """
+        try:
+            # 基础查询参数
+            params = {
+                'project_id': f'eq.{project_id}',
+                'is_active': 'eq.true',
+                'select': 'id,case_id,level,module_id,modules(name)'
+            }
+
+            # 获取测试用例
+            response = self._make_request('GET', 'test_cases', params=params)
+            test_cases = response.get('data', [])
+
+            # 在内存中过滤（避免复杂的 Supabase 查询）
+            if module_ids:
+                test_cases = [tc for tc in test_cases if tc.get('module_id') in module_ids]
+
+            if levels:
+                test_cases = [tc for tc in test_cases if tc.get('level') in levels]
+
+            return test_cases
+
+        except Exception as e:
+            logger.error(f"❌ 按筛选条件查询测试用例失败: {e}")
+            return []
+
+    def get_all_active_test_cases(self, project_id: str) -> List[Dict[str, Any]]:
+        """
+        获取所有活跃的测试用例
+
+        Args:
+            project_id: 项目ID
+
+        Returns:
+            所有活跃的测试用例列表
+        """
+        try:
+            params = {
+                'project_id': f'eq.{project_id}',
+                'is_active': 'eq.true',
+                'select': 'id,case_id,level,module_id,modules(name)'
+            }
+            response = self._make_request('GET', 'test_cases', params=params)
+            return response.get('data', [])
+        except Exception as e:
+            logger.error(f"❌ 获取所有测试用例失败: {e}")
+            return []
+
+    def get_test_cases_by_case_ids(
+        self,
+        project_id: str,
+        case_ids: List[str]
+    ) -> List[Dict[str, Any]]:
+        """
+        根据用例ID列表获取测试用例
+
+        Args:
+            project_id: 项目ID
+            case_ids: 用例ID列表（支持新格式 PRJ001-MOD001-001）
+
+        Returns:
+            测试用例列表
+        """
+        try:
+            # 处理新格式：用例ID包含连字符，需要用引号包裹
+            # 例如：PRJ001-MOD001-001 需要转换为 "PRJ001-MOD001-001"
+            escaped_ids = ','.join([f'"{cid}"' for cid in case_ids])
+
+            params = {
+                'project_id': f'eq.{project_id}',
+                'is_active': 'eq.true',
+                'case_id': f'in.({escaped_ids})',
+                'select': 'id,case_id,level,module_id,modules(name)'
+            }
+            response = self._make_request('GET', 'test_cases', params=params)
+            return response.get('data', [])
+        except Exception as e:
+            logger.error(f"❌ 根据用例ID查询失败: {e}")
+            return []
+
+    def get_execution_preview(
+        self,
+        project_id: str,
+        execution_type: str,
+        module_ids: Optional[List[str]] = None,
+        levels: Optional[List[str]] = None,
+        case_ids: Optional[List[str]] = None
+    ) -> Dict[str, Any]:
+        """
+        获取执行预览信息
+
+        Args:
+            project_id: 项目ID
+            execution_type: 执行类型 ('specific', 'all', 'modules', 'levels')
+            module_ids: 模块ID列表（可选）
+            levels: 等级列表（可选）
+            case_ids: 用例ID列表（可选）
+
+        Returns:
+            预览信息字典，包含:
+            - total_cases: 总用例数
+            - estimated_duration: 预计执行时间（秒）
+            - modules: 涉及的模块列表
+            - levels: 涉及的等级列表
+        """
+        try:
+            # 根据执行类型筛选用例
+            if execution_type == 'all':
+                # 全部用例
+                test_cases = self.get_all_active_test_cases(project_id)
+            elif execution_type == 'modules':
+                # 按模块筛选
+                test_cases = self.get_test_cases_by_filters(project_id, module_ids=module_ids)
+            elif execution_type == 'levels':
+                # 按等级筛选
+                test_cases = self.get_test_cases_by_filters(project_id, levels=levels)
+            elif execution_type == 'specific':
+                # 指定用例
+                if case_ids:
+                    test_cases = self.get_test_cases_by_case_ids(project_id, case_ids)
+                else:
+                    test_cases = []
+            else:
+                test_cases = []
+
+            # 计算统计信息
+            total_cases = len(test_cases)
+            estimated_duration = total_cases * 2  # 假设每个用例平均2秒
+
+            # 提取涉及的模块和等级
+            modules_set = set()
+            levels_set = set()
+
+            for tc in test_cases:
+                if tc.get('modules') and tc['modules'].get('name'):
+                    modules_set.add(tc['modules']['name'])
+                if tc.get('level'):
+                    levels_set.add(tc['level'])
+
+            return {
+                'total_cases': total_cases,
+                'estimated_duration': estimated_duration,
+                'modules': sorted(list(modules_set)),
+                'levels': sorted(list(levels_set))
+            }
+
+        except Exception as e:
+            logger.error(f"❌ 获取执行预览失败: {e}")
+            return {
+                'total_cases': 0,
+                'estimated_duration': 0,
+                'modules': [],
+                'levels': []
+            }
+
 
 def get_supabase_client(access_token: Optional[str] = None) -> SupabaseClient:
     """

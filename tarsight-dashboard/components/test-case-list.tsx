@@ -4,9 +4,8 @@ import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Plus } from 'lucide-react'
+import { Box, TestTube, CheckCircle2 } from 'lucide-react'
 import Link from 'next/link'
-import { TestCaseForm } from './test-case-form'
 import { TestCaseActions } from './test-case-actions'
 import { supabase as supabaseClient } from '@/lib/supabase/client'
 import type { TestCase, Module } from '@/lib/types/database'
@@ -18,7 +17,6 @@ interface TestCaseListProps {
 }
 
 export function TestCaseList({ groupedCases, modules, initialTestCases }: TestCaseListProps) {
-  const [showCreateForm, setShowCreateForm] = useState(false)
   const [testCases, setTestCases] = useState(initialTestCases)
 
   const refreshData = async () => {
@@ -32,7 +30,6 @@ export function TestCaseList({ groupedCases, modules, initialTestCases }: TestCa
 
     if (data) {
       setTestCases(data)
-      setShowCreateForm(false)
     }
   }
 
@@ -47,42 +44,22 @@ export function TestCaseList({ groupedCases, modules, initialTestCases }: TestCa
     return acc
   }, {} as Record<string, TestCase[]>)
 
-  if (showCreateForm) {
-    return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div className="bg-background max-w-4xl w-full max-h-[90vh] overflow-y-auto rounded-lg">
-          <TestCaseForm
-            modules={modules}
-            onSuccess={() => {
-              refreshData()
-              setShowCreateForm(false)
-            }}
-            onCancel={() => setShowCreateForm(false)}
-          />
-        </div>
-      </div>
-    )
-  }
-
   return (
     <>
-      {/* 创建按钮 */}
-      <div className="flex justify-end mb-4">
-        <Button onClick={() => setShowCreateForm(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          新增测试用例
-        </Button>
-      </div>
-
       {/* 测试用例列表 */}
       <div className="space-y-6">
         {Object.entries(currentGroupedCases).map(([moduleName, cases]) => (
-          <Card key={moduleName}>
-            <CardHeader>
+          <Card key={moduleName} className="rounded-xl shadow-sm border-slate-200">
+            <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>{moduleName}</CardTitle>
-                  <CardDescription>{cases.length} 个测试用例</CardDescription>
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-lg bg-blue-50 flex items-center justify-center">
+                    <TestTube className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg font-semibold text-slate-900">{moduleName}</CardTitle>
+                    <CardDescription className="text-slate-500">{cases.length} 个测试用例</CardDescription>
+                  </div>
                 </div>
               </div>
             </CardHeader>
@@ -91,28 +68,44 @@ export function TestCaseList({ groupedCases, modules, initialTestCases }: TestCa
                 {cases.map((testCase) => (
                   <div
                     key={testCase.id}
-                    className="flex items-start justify-between border-b pb-3 last:border-0 last:pb-0 group"
+                    className="group flex items-start justify-between p-4 rounded-lg hover:bg-slate-50 transition-all duration-200 border border-transparent hover:border-slate-200"
                   >
                     <Link
                       href={`/test-cases/${testCase.id}`}
-                      className="flex-1 hover:bg-muted/50 transition-colors -mx-2 px-2 rounded py-1"
+                      className="flex-1 flex gap-4"
                     >
-                      <div className="space-y-1">
+                      <div className="h-8 w-8 rounded-md bg-slate-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <Box className="h-4 w-4 text-slate-500" />
+                      </div>
+                      <div className="flex-1 space-y-2">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-medium">{testCase.case_id}</span>
-                          <Badge variant="outline">{testCase.method}</Badge>
+                          <span className="text-sm font-mono text-slate-600">{testCase.case_id}</span>
                           <Badge
-                            variant={testCase.level === 'P0' ? 'destructive' : testCase.level === 'P1' ? 'default' : 'secondary'}
-                            className={testCase.level === 'P0' ? 'bg-red-500' : testCase.level === 'P1' ? 'bg-orange-500' : ''}
+                            variant="outline"
+                            className="bg-slate-50 text-slate-700 border-slate-200 font-medium"
+                          >
+                            {testCase.method}
+                          </Badge>
+                          <Badge
+                            className={
+                              testCase.level === 'P0'
+                                ? 'bg-rose-50 text-rose-700 border-rose-200 font-medium'
+                                : testCase.level === 'P1'
+                                ? 'bg-amber-50 text-amber-700 border-amber-200 font-medium'
+                                : 'bg-slate-50 text-slate-700 border-slate-200 font-medium'
+                            }
                           >
                             {testCase.level || 'P2'}
                           </Badge>
                           {testCase.is_active && (
-                            <Badge variant="default" className="bg-green-500">活跃</Badge>
+                            <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 font-medium flex items-center gap-1">
+                              <CheckCircle2 className="h-3 w-3" />
+                              活跃
+                            </Badge>
                           )}
                         </div>
-                        <p className="text-sm text-muted-foreground">{testCase.test_name}</p>
-                        <p className="text-xs text-muted-foreground font-mono">{testCase.method} {testCase.url}</p>
+                        <p className="text-sm font-medium text-slate-900">{testCase.test_name}</p>
+                        <p className="text-xs text-slate-400 font-mono">{testCase.method} {testCase.url}</p>
                       </div>
                     </Link>
 
@@ -129,6 +122,17 @@ export function TestCaseList({ groupedCases, modules, initialTestCases }: TestCa
             </CardContent>
           </Card>
         ))}
+        {Object.keys(currentGroupedCases).length === 0 && (
+          <Card className="rounded-xl shadow-sm border-slate-200">
+            <CardContent className="py-16">
+              <div className="text-center">
+                <TestTube className="h-12 w-12 mx-auto text-slate-300 mb-4" />
+                <h3 className="text-lg font-semibold text-slate-700 mb-2">暂无测试用例</h3>
+                <p className="text-sm text-slate-500">点击上方"新建用例"按钮创建第一个测试用例</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </>
   )

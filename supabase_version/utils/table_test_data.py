@@ -156,10 +156,11 @@ def load_test_cases_from_supabase() -> List[TestCase]:
 
         modules = {m['id']: m['name'] for m in modules_response['data']}
 
-        # 获取所有测试用例
+        # 获取所有测试用例（包含 level 字段）
         test_cases_response = client._make_request('GET', 'test_cases', params={
             'project_id': f'eq.{project_id}',
-            'is_active': 'eq.true'
+            'is_active': 'eq.true',
+            'select': 'id,case_id,test_name,description,method,url,expected_status,headers,request_body,variables,validation_rules,tags,level,module_id'
         })
 
         if not test_cases_response.get('data'):
@@ -220,7 +221,8 @@ def load_test_cases_from_supabase() -> List[TestCase]:
                 'headers': headers,
                 'variables': variables,
                 'validation_rules': validation_rules,
-                'tags': tags
+                'tags': tags,
+                'level': db_case.get('level', 'P3')  # 默认等级 P3
             }
             test_cases.append(test_case)
 

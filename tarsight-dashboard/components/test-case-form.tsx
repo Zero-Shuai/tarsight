@@ -1,13 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
-import { X, Plus, Trash2 } from 'lucide-react'
+import { X, Plus, Trash2, Sparkles } from 'lucide-react'
 import { supabase as supabaseClient } from '@/lib/supabase/client'
 
 interface TestCaseFormProps {
@@ -48,6 +48,36 @@ export function TestCaseForm({ testCase, modules, onSuccess, onCancel }: TestCas
     is_active: testCase?.is_active !== undefined ? testCase.is_active : true
   })
   const [newTag, setNewTag] = useState('')
+  const [previewCaseId, setPreviewCaseId] = useState('')
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false)
+
+  // 监听模块变化，自动生成预览编号
+  useEffect(() => {
+    const fetchPreviewId = async () => {
+      if (formData.module_id && !testCase) {  // 只在新增时预览
+        setIsLoadingPreview(true)
+        try {
+          const response = await fetch(`/api/test-cases/generate-id?module_id=${formData.module_id}`)
+          if (!response.ok) {
+            const errorData = await response.json()
+            console.error('生成编号失败:', errorData)
+            setPreviewCaseId('')
+            return
+          }
+          const data = await response.json()
+          setPreviewCaseId(data.case_id || '')
+        } catch (error) {
+          console.error('生成编号失败:', error)
+          setPreviewCaseId('')
+        } finally {
+          setIsLoadingPreview(false)
+        }
+      } else {
+        setPreviewCaseId('')
+      }
+    }
+    fetchPreviewId()
+  }, [formData.module_id, testCase])
 
   // 新验证规则的状态
   const [newValidationRule, setNewValidationRule] = useState({
@@ -178,14 +208,34 @@ export function TestCaseForm({ testCase, modules, onSuccess, onCancel }: TestCas
           {/* 基本信息 */}
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <Label htmlFor="case_id">用例ID *</Label>
-              <Input
-                id="case_id"
-                value={formData.case_id}
-                onChange={(e) => setFormData({ ...formData, case_id: e.target.value })}
-                required
-                placeholder="TC001"
-              />
+              <Label htmlFor="case_id">用例编号 *</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="case_id"
+                  value={formData.case_id || previewCaseId}
+                  onChange={(e) => setFormData({ ...formData, case_id: e.target.value })}
+                  required
+                  placeholder={testCase ? '' : previewCaseId || "PRJ001-MOD001-001"}
+                  disabled={!testCase && isLoadingPreview}
+                  className="flex-1"
+                />
+                {!testCase && previewCaseId && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setFormData({ ...formData, case_id: previewCaseId })}
+                    title="使用自动生成的编号"
+                  >
+                    <Sparkles className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+              {previewCaseId && !testCase && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  预览编号: {previewCaseId}（点击 ✨ 按钮）
+                </p>
+              )}
             </div>
 
             <div>
@@ -200,7 +250,7 @@ export function TestCaseForm({ testCase, modules, onSuccess, onCancel }: TestCas
                 <option value="">选择模块</option>
                 {modules.map((module) => (
                   <option key={module.id} value={module.id}>
-                    {module.name}
+                    {module.name} {module.module_code ? `(${module.module_code})` : ''}
                   </option>
                 ))}
               </select>

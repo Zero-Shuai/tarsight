@@ -116,12 +116,14 @@ def get_user_selection(module_stats):
             logger.error(f"❌ 输入错误: {e}")
 
 
-def run_tests_and_save_to_json(selected_modules, execution_name, case_ids=None):
+def run_tests_and_save_to_json(selected_modules, execution_name, case_ids=None, levels=None):
     """运行测试并保存到 JSON 文件"""
     logger.info(f"\n🚀 开始执行测试: {execution_name}")
     logger.info(f"📋 选择的模块: {', '.join(selected_modules)}")
     if case_ids:
         logger.info(f"📋 指定的用例ID: {case_ids}")
+    if levels:
+        logger.info(f"📋 指定的等级: {levels}")
 
     # 创建 JSON 文件路径并初始化记录器
     json_file = JsonTestRecorder.create_json_file(execution_name)
@@ -142,12 +144,19 @@ def run_tests_and_save_to_json(selected_modules, execution_name, case_ids=None):
 
     # 如果选择了特定模块，设置过滤
     if len(selected_modules) == 1:
-        # 单个模块时设置过滤
+        # 单个模块时设置过滤（向后兼容）
         env['TARGET_MODULE'] = selected_modules[0]
+    elif len(selected_modules) > 1:
+        # 多个模块时使用新的环境变量
+        env['TARGET_MODULES'] = ','.join(selected_modules)
 
     # 如果指定了用例ID，设置过滤
     if case_ids:
         env['TARGET_CASE_IDS'] = case_ids
+
+    # 如果指定了等级，设置过滤
+    if levels:
+        env['TARGET_LEVELS'] = levels
 
     logger.info(f"\n📋 执行命令: python -m pytest utils/test_tarsight.py -v --alluredir=reports/allure-results --html=reports/test_report.html --self-contained-html")
     logger.info("=" * 60)
@@ -260,6 +269,14 @@ def main():
         help="指定要执行的测试用例ID列表（用逗号分隔），例如: API001,API002"
     )
     parser.add_argument(
+        "--modules",
+        help="指定要执行的模块列表（用逗号分隔），例如: user,auth,order"
+    )
+    parser.add_argument(
+        "--levels",
+        help="指定要执行的测试等级列表（用逗号分隔），例如: P0,P1,P2,P3"
+    )
+    parser.add_argument(
         "--skip-token-check",
         action="store_true",
         help="跳过 API Token 验证（用于自动化执行场景）"
@@ -298,11 +315,23 @@ def main():
         return
 
     # 2. 用户选择模块（如果使用 --all 参数，自动选择所有模块）
-    # 如果指定了 --case-ids，则自动选择所有模块
-    if args.case_ids:
+    # 如果指定了 --case-ids 或 --levels，则自动选择所有模块
+    if args.case_ids or args.levels:
         selected_modules = list(module_stats.keys()) if module_stats else []
         if selected_modules:
-            logger.info(f"\n✅ 指定了用例ID，自动选择所有模块")
+            reason = "用例ID" if args.case_ids else "等级"
+            logger.info(f"\n✅ 指定了{reason}，自动选择所有模块")
+    elif args.modules:
+        # 处理 --modules 参数（逗号分隔的模块列表）
+        selected_modules = [m.strip() for m in args.modules.split(',')]
+        # 验证模块是否存在
+        if module_stats:
+            invalid_modules = [m for m in selected_modules if m not in module_stats]
+            if invalid_modules:
+                logger.error(f"❌ 无效的模块: {', '.join(invalid_modules)}")
+                logger.info(f"💡 可用模块: {', '.join(module_stats.keys())}")
+                return
+        logger.info(f"\n✅ 使用指定模块: {', '.join(selected_modules)}")
     elif args.all:
         selected_modules = list(module_stats.keys()) if module_stats else []
         if selected_modules:
@@ -324,7 +353,12 @@ def main():
     else:
         logger.info(f"⚠️ 主进程未检测到EXECUTION_ID，将创建新记录")
 
-    json_file = run_tests_and_save_to_json(selected_modules, execution_name, case_ids=args.case_ids)
+    json_file = run_tests_and_save_to_json(
+        selected_modules,
+        execution_name,
+        case_ids=args.case_ids,
+        levels=args.levels
+    )
 
     if not json_file:
         logger.error("❌ 测试执行失败或没有生成结果文件")
