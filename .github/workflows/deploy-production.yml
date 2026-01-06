@@ -1,0 +1,81 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  deploy:
+    name: Deploy to Production Server
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.PRODUCTION_HOST }}
+          username: ${{ secrets.PRODUCTION_USER }}
+          key: ${{ secrets.PRODUCTION_SSH_KEY }}
+          port: ${{ secrets.PRODUCTION_PORT || 22 }}
+          script_stop: true  # 任何命令失败则停止
+          script: |
+            # 设置输出颜色
+            RED='\033[0;31m'
+            GREEN='\033[0;32m'
+            YELLOW='\033[1;33m'
+            BLUE='\033[0;34m'
+            NC='\033[0m'
+
+            echo -e "${BLUE}========================================${NC}"
+            echo -e "${BLUE}  GitHub Actions 自动部署${NC}"
+            echo -e "${BLUE}  触发用户: ${{ github.actor }}${NC}"
+            echo -e "${BLUE}  提交 SHA: ${{ github.sha }}${NC}"
+            echo -e "${BLUE}  提交信息: ${{ github.event.head_commit.message }}${NC}"
+            echo -e "${BLUE}========================================${NC}"
+            echo ""
+
+            # 进入项目目录
+            cd /opt/tarsight || exit 1
+
+            # 显示当前版本
+            echo -e "${YELLOW}当前版本:${NC}"
+            git log --oneline -1
+            echo ""
+
+            # 拉取最新代码
+            echo -e "${YELLOW}拉取最新代码...${NC}"
+            git fetch origin
+            git pull origin master
+
+            # 检查是否需要 --no-lint
+            COMMIT_MSG="${{ github.event.head_commit.message }}"
+            if [[ "$COMMIT_MSG" == *"[no-lint]"* ]] || [[ "$COMMIT_MSG" == *"[skip lint]"* ]]; then
+              echo -e "${YELLOW}检测到 [no-lint] 标记，使用无类型检查模式${NC}"
+              EXTRA_ARGS="--no-lint"
+            else
+              EXTRA_ARGS=""
+            fi
+
+            # 执行自动化部署脚本
+            echo -e "${YELLOW}开始自动部署...${NC}"
+            sudo bash scripts/auto-deploy.sh $EXTRA_ARGS
+
+            echo ""
+            echo -e "${GREEN}========================================${NC}"
+            echo -e "${GREEN}✓ 自动部署完成！${NC}"
+            echo -e "${GREEN}========================================${NC}"
+
+      # 可选：发送部署通知
+      - name: Deployment Notification
+        if: always()
+        run: |
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "✅ 部署成功！"
+          else
+            echo "❌ 部署失败，请检查日志"
+          fi
