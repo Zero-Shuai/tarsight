@@ -223,7 +223,7 @@ export function TestCaseForm({ testCase, modules, onSuccess, onCancel }: TestCas
                   <Button
                     type="button"
                     variant="outline"
-                    size="icon"
+                    size="sm"
                     onClick={() => setFormData({ ...formData, case_id: previewCaseId })}
                     title="使用自动生成的编号"
                   >
