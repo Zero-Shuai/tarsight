@@ -60,12 +60,12 @@ export default async function TestCasesPage() {
           </div>
           <div className="flex gap-3">
             <TestExecutionDialog modules={modules} />
-            <Button asChild className="rounded-lg">
-              <Link href="/test-cases/new">
+            <Link href="/test-cases/new">
+              <Button className="rounded-lg">
                 <Plus className="mr-2 h-4 w-4" />
                 新建用例
-              </Link>
-            </Button>
+              </Button>
+            </Link>
           </div>
         </div>
 
