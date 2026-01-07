@@ -8,13 +8,19 @@ export const metadata = {
 
 export default function SettingsPage() {
   return (
-    <div className="p-8 space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">系统设置</h1>
-        <p className="text-muted-foreground mt-2">配置测试执行队列和系统参数</p>
-      </div>
+    <div className="min-h-screen bg-slate-50 py-12 px-4 sm:px-8">
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* 页面标题 */}
+        <div className="space-y-2 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100 ease-out">
+          <h1 className="text-3xl font-semibold tracking-tight text-slate-900">系统设置</h1>
+          <p className="text-slate-500">配置测试执行队列和系统参数</p>
+        </div>
 
-      <QueueConfigForm />
+        {/* 设置表单 */}
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200 ease-out">
+          <QueueConfigForm />
+        </div>
+      </div>
     </div>
   )
 }
