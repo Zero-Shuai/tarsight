@@ -32,26 +32,30 @@ function getStatusInfo(status: string) {
       text: '运行中',
       className: 'bg-blue-50 text-blue-600 border-blue-100',
       icon: PlayCircle,
-      barColor: 'bg-blue-500/50'
+      iconColor: 'text-[#3B82F6]', // Blue-500
+      barColor: 'bg-[#3B82F6]'
     },
     completed: {
       text: '已完成',
       className: 'bg-emerald-50 text-emerald-600 border-emerald-100',
       icon: CheckCircle2,
-      barColor: 'bg-emerald-500/50'
+      iconColor: 'text-[#10B981]', // Emerald-500
+      barColor: 'bg-[#10B981]'
     },
     failed: {
       text: '失败',
       className: 'bg-rose-50 text-rose-600 border-rose-100',
       icon: XCircle,
-      barColor: 'bg-rose-500/50'
+      iconColor: 'text-[#EF4444]', // Red-500
+      barColor: 'bg-[#EF4444]'
     }
   }
   return info[status as keyof typeof info] || {
     text: status,
     className: 'bg-slate-50 text-slate-600 border-slate-100',
     icon: Clock,
-    barColor: 'bg-slate-400/50'
+    iconColor: 'text-slate-400',
+    barColor: 'bg-slate-400'
   }
 }
 
@@ -64,8 +68,8 @@ export function ExecutionListCompact({ executions }: ExecutionListCompactProps) 
       <div className="bg-white rounded-xl shadow-sm border border-slate-50 overflow-hidden">
         {/* Header */}
         <div className="px-6 py-3 border-b border-slate-100">
-          <div className="grid grid-cols-12 gap-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            <div className="col-span-4">执行信息</div>
+          <div className="grid grid-cols-12 gap-4 text-xs font-semibold text-slate-500 uppercase tracking-wider items-center">
+            <div className="col-span-4 pl-2">执行信息</div>
             <div className="col-span-2 text-center">总用例</div>
             <div className="col-span-2 text-center">通过</div>
             <div className="col-span-2 text-center">失败</div>
@@ -88,51 +92,51 @@ export function ExecutionListCompact({ executions }: ExecutionListCompactProps) 
                 onClick={() => setSelectedExecution(execution)}
                 className="group relative flex items-center px-6 py-3 hover:bg-[#F8FAFC] transition-colors duration-150 cursor-pointer"
               >
-                {/* Status Indicator Bar (3px, 50% opacity) */}
+                {/* Status Indicator Bar - Match icon color exactly */}
                 <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${statusInfo.barColor}`} />
 
-                {/* Content Grid */}
+                {/* Content Grid - Match header layout exactly */}
                 <div className="grid grid-cols-12 gap-4 items-center flex-1 ml-2">
                   {/* Execution Name & Timestamp */}
-                  <div className="col-span-4 min-w-0">
+                  <div className="col-span-4 min-w-0 pl-2">
                     <div className="flex items-center gap-2.5">
-                      <StatusIcon className={`h-4 w-4 flex-shrink-0 ${statusInfo.icon === PlayCircle ? 'text-blue-600' : statusInfo.icon === CheckCircle2 ? 'text-emerald-600' : 'text-rose-600'}`} />
+                      <StatusIcon className={`h-4 w-4 flex-shrink-0 ${statusInfo.iconColor}`} />
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold text-slate-900 truncate group-hover:text-blue-600 transition-colors">
+                        <p className="text-sm font-bold text-[#1E293B] truncate group-hover:text-blue-600 transition-colors">
                           {execution.execution_name}
                         </p>
-                        <p className="text-xs text-slate-400 font-mono mt-0.5">
+                        <p className="text-[12px] text-[#64748B] font-mono mt-0.5">
                           {formatDate(execution.started_at)}
                         </p>
                       </div>
                     </div>
                   </div>
 
-                  {/* Total Count */}
+                  {/* Total Count - Centered */}
                   <div className="col-span-2 text-center">
                     <p className="text-lg font-bold text-slate-900">{execution.total_tests}</p>
                   </div>
 
-                  {/* Pass Count */}
+                  {/* Pass Count - Centered */}
                   <div className="col-span-2 text-center">
                     <p className="text-lg font-bold text-emerald-600">{execution.passed_tests}</p>
                   </div>
 
-                  {/* Fail Count */}
+                  {/* Fail Count - Centered */}
                   <div className="col-span-2 text-center">
                     <p className="text-lg font-bold text-rose-600">{execution.failed_tests}</p>
                   </div>
 
-                  {/* Success Rate Badge - High Contrast */}
+                  {/* Success Rate Badge - Dynamic colors: <50% red, 50-99% orange, 100% green */}
                   <div className="col-span-2 flex justify-center">
                     <Badge
                       variant="outline"
                       className={`font-semibold ${
-                        passRate >= 80
+                        passRate === 100
                           ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
                           : passRate >= 50
                           ? 'bg-amber-50 text-amber-600 border-amber-100'
-                          : 'bg-rose-50 text-rose-700 border-rose-100'
+                          : 'bg-rose-50 text-rose-600 border-rose-100'
                       }`}
                     >
                       {passRate.toFixed(1)}%
@@ -226,7 +230,7 @@ function ExecutionDetailsDrawer({
             </div>
             <div>
               <h2 className="text-lg font-semibold text-slate-900">{execution.execution_name}</h2>
-              <p className="text-xs text-slate-400 font-mono">{formatDate(execution.started_at)}</p>
+              <p className="text-[12px] text-[#64748B] font-mono">{formatDate(execution.started_at)}</p>
             </div>
           </div>
           <Button
@@ -272,7 +276,7 @@ function ExecutionDetailsDrawer({
             </div>
           )}
 
-          {/* Success Rate Progress - 8px height */}
+          {/* Success Rate Progress - Dynamic colors: <50% red, 50-99% orange, 100% green */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-slate-700">通过率</span>
@@ -281,7 +285,11 @@ function ExecutionDetailsDrawer({
             <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
               <div
                 className={`h-2 rounded-full transition-all duration-500 ${
-                  passRate >= 80 ? 'bg-emerald-500' : passRate >= 50 ? 'bg-amber-500' : 'bg-rose-500'
+                  passRate === 100
+                    ? 'bg-emerald-500'
+                    : passRate >= 50
+                    ? 'bg-amber-500'
+                    : 'bg-rose-500'
                 }`}
                 style={{ width: `${passRate}%` }}
               />
