@@ -66,14 +66,17 @@ export function ExecutionListCompact({ executions }: ExecutionListCompactProps) 
     <>
       {/* List Container */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-50 overflow-hidden">
-        {/* Header */}
+        {/* Header - Fixed-width grid */}
         <div className="px-6 py-3 border-b border-slate-100">
-          <div className="grid grid-cols-12 gap-4 text-xs font-semibold text-slate-500 uppercase tracking-wider items-center">
-            <div className="col-span-4 pl-2">执行信息</div>
-            <div className="col-span-2 text-center">总用例</div>
-            <div className="col-span-2 text-center">通过</div>
-            <div className="col-span-2 text-center">失败</div>
-            <div className="col-span-2 text-center">通过率</div>
+          <div className="grid text-xs font-semibold text-slate-500 uppercase tracking-wider items-center"
+               style={{ gridTemplateColumns: '48px 1fr 100px 100px 100px 120px 80px' }}>
+            <div></div>
+            <div>执行信息</div>
+            <div className="text-center">总用例</div>
+            <div className="text-center">通过</div>
+            <div className="text-center">失败</div>
+            <div className="text-center">通过率</div>
+            <div></div>
           </div>
         </div>
 
@@ -95,68 +98,68 @@ export function ExecutionListCompact({ executions }: ExecutionListCompactProps) 
                 {/* Status Indicator Bar - Match icon color exactly */}
                 <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${statusInfo.barColor}`} />
 
-                {/* Content Grid - Match header layout exactly */}
-                <div className="grid grid-cols-12 gap-4 items-center flex-1 ml-2">
+                {/* Content Grid - Fixed-width columns matching header */}
+                <div className="grid items-center flex-1"
+                     style={{ gridTemplateColumns: '48px 1fr 100px 100px 100px 120px 80px' }}>
+                  {/* Status Icon */}
+                  <div className="flex justify-center">
+                    <StatusIcon className={`h-4 w-4 flex-shrink-0 ${statusInfo.iconColor}`} />
+                  </div>
+
                   {/* Execution Name & Timestamp */}
-                  <div className="col-span-4 min-w-0 pl-2">
-                    <div className="flex items-center gap-2.5">
-                      <StatusIcon className={`h-4 w-4 flex-shrink-0 ${statusInfo.iconColor}`} />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-bold text-[#1E293B] truncate group-hover:text-blue-600 transition-colors">
-                          {execution.execution_name}
-                        </p>
-                        <p className="text-[12px] text-[#64748B] font-mono mt-0.5">
-                          {formatDate(execution.started_at)}
-                        </p>
-                      </div>
-                    </div>
+                  <div className="min-w-0 px-2">
+                    <p className="text-sm font-bold text-[#1E293B] truncate group-hover:text-blue-600 transition-colors">
+                      {execution.execution_name}
+                    </p>
+                    <p className="text-[12px] text-[#64748B] font-mono mt-0.5">
+                      {formatDate(execution.started_at)}
+                    </p>
                   </div>
 
                   {/* Total Count - Centered */}
-                  <div className="col-span-2 text-center">
+                  <div className="text-center">
                     <p className="text-lg font-bold text-slate-900">{execution.total_tests}</p>
                   </div>
 
                   {/* Pass Count - Centered */}
-                  <div className="col-span-2 text-center">
+                  <div className="text-center">
                     <p className="text-lg font-bold text-emerald-600">{execution.passed_tests}</p>
                   </div>
 
                   {/* Fail Count - Centered */}
-                  <div className="col-span-2 text-center">
+                  <div className="text-center">
                     <p className="text-lg font-bold text-rose-600">{execution.failed_tests}</p>
                   </div>
 
-                  {/* Success Rate Badge - Dynamic colors: <50% red, 50-99% orange, 100% green */}
-                  <div className="col-span-2 flex justify-center">
+                  {/* Success Rate Badge - High contrast pill shape */}
+                  <div className="flex justify-center">
                     <Badge
                       variant="outline"
-                      className={`font-semibold ${
+                      className={`font-semibold px-3 py-1 rounded-full ${
                         passRate === 100
-                          ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
-                          : passRate >= 50
-                          ? 'bg-amber-50 text-amber-600 border-amber-100'
-                          : 'bg-rose-50 text-rose-600 border-rose-100'
+                          ? 'bg-[#DCFCE7] text-[#166534] border-emerald-200'
+                          : 'bg-[#FEE2E2] text-[#991B1B] border-rose-200'
                       }`}
                     >
                       {passRate.toFixed(1)}%
                     </Badge>
                   </div>
-                </div>
 
-                {/* Ghost "View" Button - Only on Hover */}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="ml-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-blue-50 hover:text-blue-600 rounded-lg text-sm font-medium"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setSelectedExecution(execution)
-                  }}
-                >
-                  <Eye className="h-4 w-4 mr-1.5" />
-                  查看
-                </Button>
+                  {/* Action Button - Icon only */}
+                  <div className="flex justify-center">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-blue-50 hover:text-blue-600 rounded-lg h-8 w-8 p-0"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setSelectedExecution(execution)
+                      }}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
               </div>
             )
           })}
@@ -333,8 +336,8 @@ function ExecutionDetailsDrawer({
           </div>
         </div>
 
-        {/* Drawer Footer - Primary CTA Button with Shadow */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50">
+        {/* Drawer Footer - Sticky with border-top */}
+        <div className="sticky bottom-0 flex items-center justify-between px-6 py-4 border-t border-[#E2E8F0] bg-white">
           <Button variant="outline" onClick={onClose} className="rounded-lg">
             关闭
           </Button>

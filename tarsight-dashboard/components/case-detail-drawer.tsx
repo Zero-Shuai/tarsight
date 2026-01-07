@@ -13,7 +13,7 @@ interface CaseDetailDrawerProps {
   onNavigate: (direction: 'up' | 'down') => void
 }
 
-// Simple syntax highlighting for JSON
+// Simple syntax highlighting for JSON with better contrast
 function syntaxHighlight(json: string) {
   if (!json) return null
 
@@ -32,14 +32,15 @@ function syntaxHighlight(json: string) {
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?)/g, (match) => {
-        let cls = 'text-purple-600' // key
+        // Use high contrast colors
+        let cls = 'text-[#8B5CF6]' // purple for keys (better contrast)
         if (match.endsWith(':')) {
-          cls = 'text-blue-600' // key with colon
+          cls = 'text-[#3B82F6]' // blue for keys with colon
         }
         return `<span class="${cls}">${match}</span>`
       })
       .replace(/\b(true|false|null)\b/g, '<span class="text-amber-600">$1</span>')
-      .replace(/\b(-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)\b/g, '<span class="text-green-600">$1</span>')
+      .replace(/\b(-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)\b/g, '<span class="text-emerald-600">$1</span>')
   } catch (error) {
     // Return escaped HTML string (not JSX) for dangerouslySetInnerHTML
     console.error('JSON parsing error:', error, 'Input:', json)
@@ -297,9 +298,12 @@ export function CaseDetailDrawer({ caseResult, allCases, onClose, onNavigate }: 
                       </Button>
                     </div>
                     <div className="bg-slate-50 rounded-lg p-4 overflow-x-auto">
-                      <pre className="text-xs font-mono">
-                        {syntaxHighlight(safeStringify(caseResult.request_headers) || '')}
-                      </pre>
+                      <pre
+                        className="text-xs font-mono"
+                        dangerouslySetInnerHTML={{
+                          __html: syntaxHighlight(safeStringify(caseResult.request_headers) || '') || ''
+                        }}
+                      />
                     </div>
                   </div>
                 )}
@@ -319,9 +323,12 @@ export function CaseDetailDrawer({ caseResult, allCases, onClose, onNavigate }: 
                       </Button>
                     </div>
                     <div className="bg-slate-50 rounded-lg p-4 overflow-x-auto">
-                      <pre className="text-xs font-mono">
-                        {syntaxHighlight(safeStringify(caseResult.request_body) || '')}
-                      </pre>
+                      <pre
+                        className="text-xs font-mono"
+                        dangerouslySetInnerHTML={{
+                          __html: syntaxHighlight(safeStringify(caseResult.request_body) || '') || ''
+                        }}
+                      />
                     </div>
                   </div>
                 )}
@@ -346,9 +353,12 @@ export function CaseDetailDrawer({ caseResult, allCases, onClose, onNavigate }: 
                       </Button>
                     </div>
                     <div className="bg-slate-50 rounded-lg p-4 overflow-x-auto">
-                      <pre className="text-xs font-mono">
-                        {syntaxHighlight(safeStringify(caseResult.response_headers) || '')}
-                      </pre>
+                      <pre
+                        className="text-xs font-mono"
+                        dangerouslySetInnerHTML={{
+                          __html: syntaxHighlight(safeStringify(caseResult.response_headers) || '') || ''
+                        }}
+                      />
                     </div>
                   </div>
                 )}
@@ -368,9 +378,12 @@ export function CaseDetailDrawer({ caseResult, allCases, onClose, onNavigate }: 
                       </Button>
                     </div>
                     <div className="bg-slate-50 rounded-lg p-4 overflow-x-auto max-h-96">
-                      <pre className="text-xs font-mono overflow-auto">
-                        {syntaxHighlight(safeStringify(caseResult.response_body) || '')}
-                      </pre>
+                      <pre
+                        className="text-xs font-mono overflow-auto"
+                        dangerouslySetInnerHTML={{
+                          __html: syntaxHighlight(safeStringify(caseResult.response_body) || '') || ''
+                        }}
+                      />
                     </div>
                   </div>
                 )}
@@ -397,8 +410,8 @@ export function CaseDetailDrawer({ caseResult, allCases, onClose, onNavigate }: 
           </div>
         </div>
 
-        {/* Footer - Keyboard Shortcuts */}
-        <div className="px-6 py-3 border-t border-slate-100 bg-slate-50">
+        {/* Footer - Keyboard Shortcuts & Sticky Run Button */}
+        <div className="sticky bottom-0 px-6 py-3 border-t border-[#E2E8F0] bg-white">
           <div className="flex items-center justify-between">
             <p className="text-xs text-slate-500">
               快捷键: <kbd className="px-1.5 py-0.5 bg-white border border-slate-300 rounded text-xs">↑</kbd>
@@ -409,7 +422,8 @@ export function CaseDetailDrawer({ caseResult, allCases, onClose, onNavigate }: 
             </p>
             <Button
               onClick={() => {
-                // Re-run functionality
+                // TODO: Implement re-run functionality
+                console.log('Re-run test case:', caseResult.id)
               }}
               className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200"
             >
