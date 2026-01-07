@@ -27,9 +27,26 @@ async function getExecutionDetails(executionId: string) {
     .eq('execution_id', executionId)
     .order('created_at', { ascending: true })
 
+  // 扁平化数据，将嵌套的 test_case 和 module 字段提取到顶层
+  const flattenedResults = (testResults || []).map((result: any) => ({
+    ...result,
+    // 从嵌套对象中提取便捷访问字段
+    case_id: result.test_case?.case_id,
+    test_name: result.test_case?.test_name,
+    module_name: result.test_case?.module?.name || 'Unknown',
+    method: result.test_case?.method,
+    url: result.test_case?.url,
+    response_time: result.duration,
+    response_code: result.response_info?.Status_Code,
+    request_headers: result.request_info?.Headers,
+    request_body: result.request_info?.Body,
+    response_headers: result.response_info?.Headers,
+    response_body: result.response_info?.Body
+  }))
+
   return {
     execution,
-    testResults: testResults || []
+    testResults: flattenedResults
   }
 }
 

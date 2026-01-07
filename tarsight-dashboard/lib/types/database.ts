@@ -102,6 +102,78 @@ export type TestResult = {
 }
 
 // ============================================
+// Test Case Result (with joined data)
+// ============================================
+// 用于执行详情页，包含 test_results + test_cases + modules 的扁平化数据
+export type TestCaseResult = {
+  // test_results 表字段
+  id: string
+  execution_id: string
+  test_case_id: string
+  status: 'passed' | 'failed' | 'skipped'
+  duration: number
+  error_message?: string
+  request_info?: {
+    URL?: string
+    Method?: string
+    Headers?: Record<string, string>
+    Body?: Record<string, any>
+    [key: string]: any
+  }
+  response_info?: {
+    Status_Code?: number
+    Headers?: Record<string, string>
+    Body?: Record<string, any>
+    Success?: boolean
+    Message?: string
+    Code?: number
+    Data?: any
+    [key: string]: any
+  }
+  created_at: string
+
+  // test_cases 表字段 (通过 test_case 关联)
+  test_case?: {
+    id: string
+    project_id: string
+    module_id: string
+    case_id: string
+    test_name: string
+    description?: string
+    method: string
+    url: string
+    expected_status: number
+    headers?: Record<string, string>
+    request_body?: Record<string, any>
+    variables?: Record<string, any>
+    tags?: string[]
+    level: string
+    is_active: boolean
+    user_id?: string
+    created_at: string
+    updated_at?: string
+
+    // modules 表字段 (通过 module 关联)
+    module?: {
+      name: string
+    }
+  }
+
+  // 便捷访问字段（从嵌套对象中提取）
+  case_id?: string  // test_case.case_id
+  test_name?: string  // test_case.test_name
+  module_name?: string  // test_case.module.name
+  method?: string  // test_case.method
+  url?: string  // test_case.url
+  response_time?: number  // duration 的别名
+  response_code?: number  // response_info.Status_Code
+  request_headers?: Record<string, string>  // request_info.Headers
+  request_body?: Record<string, any>  // request_info.Body
+  response_headers?: Record<string, string>  // response_info.Headers
+  response_body?: any  // response_info.Body
+}
+
+// ============================================
 // API Request/Response Types
 // ============================================
 
