@@ -83,8 +83,11 @@ export function ExecutionListCompact({ executions }: ExecutionListCompactProps) 
         {/* List Rows */}
         <div className="divide-y divide-slate-50">
           {executions.map((execution) => {
-            const passRate = execution.total_tests > 0
-              ? (execution.passed_tests / execution.total_tests) * 100
+            // 通过率 = 通过数 / (总数 - 跳过数) * 100
+            // 只计算实际执行的用例（排除跳过的）
+            const executedTests = execution.total_tests - (execution.skipped_tests || 0)
+            const passRate = executedTests > 0
+              ? (execution.passed_tests / executedTests) * 100
               : 0
             const statusInfo = getStatusInfo(execution.status)
             const StatusIcon = statusInfo.icon
@@ -206,8 +209,11 @@ function ExecutionDetailsDrawer({
   execution: TestExecution
   onClose: () => void
 }) {
-  const passRate = execution.total_tests > 0
-    ? (execution.passed_tests / execution.total_tests) * 100
+  // 通过率 = 通过数 / (总数 - 跳过数) * 100
+  // 只计算实际执行的用例（排除跳过的）
+  const executedTests = execution.total_tests - (execution.skipped_tests || 0)
+  const passRate = executedTests > 0
+    ? (execution.passed_tests / executedTests) * 100
     : 0
   const statusInfo = getStatusInfo(execution.status)
 
