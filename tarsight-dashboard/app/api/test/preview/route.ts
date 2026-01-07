@@ -48,8 +48,9 @@ export async function POST(request: NextRequest) {
         if (allError) throw allError
 
         total_cases = allCases?.length || 0
-        modules = [...new Set(allCases?.map(c => c.modules?.name).filter(Boolean) || [])]
-        levels_found = [...new Set(allCases?.map(c => c.level).filter(Boolean) || [])]
+        // c.modules 是一个数组，需要取第一个元素的 name
+        modules = [...new Set(allCases?.map(c => c.modules?.[0]?.name).filter(Boolean) as string[] || [])]
+        levels_found = [...new Set(allCases?.map(c => c.level).filter(Boolean) as string[] || [])]
         break
       }
 
@@ -69,8 +70,9 @@ export async function POST(request: NextRequest) {
         if (moduleError) throw moduleError
 
         total_cases = moduleCases?.length || 0
-        modules = [...new Set(moduleCases?.map(c => c.modules?.name).filter(Boolean) || [])]
-        levels_found = [...new Set(moduleCases?.map(c => c.level).filter(Boolean) || [])]
+        // c.modules 是一个数组，需要取第一个元素的 name
+        modules = [...new Set(moduleCases?.map(c => c.modules?.[0]?.name).filter(Boolean) as string[] || [])]
+        levels_found = [...new Set(moduleCases?.map(c => c.level).filter(Boolean) as string[] || [])]
         break
       }
 
@@ -90,8 +92,9 @@ export async function POST(request: NextRequest) {
         if (levelError) throw levelError
 
         total_cases = levelCases?.length || 0
-        modules = [...new Set(levelCases?.map(c => c.modules?.name).filter(Boolean) || [])]
-        levels_found = [...new Set(levelCases?.map(c => c.level).filter(Boolean) || [])]
+        // c.modules 是一个数组，需要取第一个元素的 name
+        modules = [...new Set(levelCases?.map(c => c.modules?.[0]?.name).filter(Boolean) as string[] || [])]
+        levels_found = [...new Set(levelCases?.map(c => c.level).filter(Boolean) as string[] || [])]
         break
       }
 
@@ -113,8 +116,9 @@ export async function POST(request: NextRequest) {
 
         if (specificError) throw specificError
 
-        modules = [...new Set(specificCases?.map(c => c.modules?.name).filter(Boolean) || [])]
-        levels_found = [...new Set(specificCases?.map(c => c.level).filter(Boolean) || [])]
+        // c.modules 是一个数组，需要取第一个元素的 name
+        modules = [...new Set(specificCases?.map(c => c.modules?.[0]?.name).filter(Boolean) as string[] || [])]
+        levels_found = [...new Set(specificCases?.map(c => c.level).filter(Boolean) as string[] || [])]
         break
       }
 
