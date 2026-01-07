@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Plus, Play } from 'lucide-react'
+import { Plus, Play, ListChecks, Layers, CheckCircle2 } from 'lucide-react'
 import Link from 'next/link'
 import { TestCaseList } from '@/components/test-case-list'
 import { TestExecutionDialog } from '@/components/test-execution-dialog'
@@ -50,10 +50,10 @@ export default async function TestCasesPage() {
   }, {} as Record<string, TestCase[]>)
 
   return (
-    <div className="min-h-screen bg-slate-50 py-12 px-8">
+    <div className="min-h-screen bg-slate-50 py-12 px-4 sm:px-8">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* 页面标题 */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100 ease-out">
           <div className="space-y-2">
             <h1 className="text-3xl font-semibold tracking-tight text-slate-900">测试用例</h1>
             <p className="text-slate-500">管理所有测试用例</p>
@@ -61,7 +61,7 @@ export default async function TestCasesPage() {
           <div className="flex gap-3">
             <TestExecutionDialog modules={modules} />
             <Link href="/test-cases/new">
-              <Button className="rounded-lg">
+              <Button className="rounded-lg shadow-sm hover:shadow-md transition-all duration-200">
                 <Plus className="mr-2 h-4 w-4" />
                 新建用例
               </Button>
@@ -71,32 +71,44 @@ export default async function TestCasesPage() {
 
         {/* 统计信息 */}
         <div className="grid gap-6 md:grid-cols-3">
-          <Card className="rounded-xl shadow-sm border-slate-200">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-slate-600">总用例数</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-slate-900">{testCases.length}</div>
-            </CardContent>
-          </Card>
+          {/* 总用例数卡片 */}
+          <div className="group bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 p-5 border border-slate-50 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200 ease-out">
+            <div className="flex flex-col items-center justify-center space-y-3">
+              <div className="h-11 w-11 rounded-xl bg-blue-50 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                <ListChecks className="h-5.5 w-5.5 text-blue-600" />
+              </div>
+              <div className="text-center space-y-0.5">
+                <p className="text-4xl font-black text-slate-900 tracking-tight">{testCases.length}</p>
+                <p className="text-sm font-medium text-slate-500">总用例数</p>
+              </div>
+            </div>
+          </div>
 
-          <Card className="rounded-xl shadow-sm border-slate-200">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-slate-600">模块数</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-slate-900">{Object.keys(groupedCases).length}</div>
-            </CardContent>
-          </Card>
+          {/* 模块数卡片 */}
+          <div className="group bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 p-5 border border-slate-50 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300 ease-out">
+            <div className="flex flex-col items-center justify-center space-y-3">
+              <div className="h-11 w-11 rounded-xl bg-violet-50 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                <Layers className="h-5.5 w-5.5 text-violet-600" />
+              </div>
+              <div className="text-center space-y-0.5">
+                <p className="text-4xl font-black text-slate-900 tracking-tight">{Object.keys(groupedCases).length}</p>
+                <p className="text-sm font-medium text-slate-500">模块数</p>
+              </div>
+            </div>
+          </div>
 
-          <Card className="rounded-xl shadow-sm border-slate-200">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-slate-600">活跃用例</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-emerald-600">{testCases.filter(tc => tc.is_active).length}</div>
-            </CardContent>
-          </Card>
+          {/* 活跃用例卡片 */}
+          <div className="group bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 p-5 border border-slate-50 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-400 ease-out">
+            <div className="flex flex-col items-center justify-center space-y-3">
+              <div className="h-11 w-11 rounded-xl bg-emerald-50 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                <CheckCircle2 className="h-5.5 w-5.5 text-emerald-600" />
+              </div>
+              <div className="text-center space-y-0.5">
+                <p className="text-4xl font-black text-slate-900 tracking-tight">{testCases.filter(tc => tc.is_active).length}</p>
+                <p className="text-sm font-medium text-slate-500">活跃用例</p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* 传递数据给客户端组件 */}

@@ -47,9 +47,9 @@ export function TestCaseList({ groupedCases, modules, initialTestCases }: TestCa
   return (
     <>
       {/* 测试用例列表 */}
-      <div className="space-y-6">
+      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-500 ease-out">
         {Object.entries(currentGroupedCases).map(([moduleName, cases]) => (
-          <Card key={moduleName} className="rounded-xl shadow-sm border-slate-200">
+          <Card key={moduleName} className="rounded-xl shadow-sm hover:shadow-md transition-all duration-300 bg-white border border-slate-50">
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -64,11 +64,11 @@ export function TestCaseList({ groupedCases, modules, initialTestCases }: TestCa
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 {cases.map((testCase) => (
                   <div
                     key={testCase.id}
-                    className="group flex items-start justify-between p-4 rounded-lg hover:bg-slate-50 transition-all duration-200 border border-transparent hover:border-slate-200"
+                    className="group flex items-start justify-between p-4 rounded-lg hover:bg-slate-50 hover:shadow-sm transition-all duration-200 border border-slate-50 hover:border-slate-100 cursor-pointer"
                   >
                     <Link
                       href={`/test-cases/${testCase.id}`}
@@ -82,23 +82,23 @@ export function TestCaseList({ groupedCases, modules, initialTestCases }: TestCa
                           <span className="text-sm font-mono text-slate-600">{testCase.case_id}</span>
                           <Badge
                             variant="outline"
-                            className="bg-slate-50 text-slate-700 border-slate-200 font-medium"
+                            className="bg-slate-50 text-slate-700 border-slate-100 font-medium"
                           >
                             {testCase.method}
                           </Badge>
                           <Badge
                             className={
                               testCase.level === 'P0'
-                                ? 'bg-rose-50 text-rose-700 border-rose-200 font-medium'
+                                ? 'bg-rose-50 text-rose-600 border-rose-100 font-medium'
                                 : testCase.level === 'P1'
-                                ? 'bg-amber-50 text-amber-700 border-amber-200 font-medium'
-                                : 'bg-slate-50 text-slate-700 border-slate-200 font-medium'
+                                ? 'bg-amber-50 text-amber-600 border-amber-100 font-medium'
+                                : 'bg-slate-50 text-slate-600 border-slate-100 font-medium'
                             }
                           >
                             {testCase.level || 'P2'}
                           </Badge>
                           {testCase.is_active && (
-                            <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 font-medium flex items-center gap-1">
+                            <Badge className="bg-emerald-50 text-emerald-600 border-emerald-100 font-medium flex items-center gap-1">
                               <CheckCircle2 className="h-3 w-3" />
                               活跃
                             </Badge>
@@ -123,12 +123,16 @@ export function TestCaseList({ groupedCases, modules, initialTestCases }: TestCa
           </Card>
         ))}
         {Object.keys(currentGroupedCases).length === 0 && (
-          <Card className="rounded-xl shadow-sm border-slate-200">
-            <CardContent className="py-16">
+          <Card className="rounded-xl shadow-sm bg-white border border-slate-50">
+            <CardContent className="py-20">
               <div className="text-center">
-                <TestTube className="h-12 w-12 mx-auto text-slate-300 mb-4" />
-                <h3 className="text-lg font-semibold text-slate-700 mb-2">暂无测试用例</h3>
-                <p className="text-sm text-slate-500">点击上方"新建用例"按钮创建第一个测试用例</p>
+                <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-blue-50 to-slate-100 mb-6">
+                  <TestTube className="h-12 w-12 text-blue-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900 mb-3">暂无测试用例</h3>
+                <p className="text-sm text-slate-500 mb-6 max-w-md mx-auto leading-relaxed">
+                  点击上方"新建用例"按钮创建第一个测试用例。开始构建您的测试用例库。
+                </p>
               </div>
             </CardContent>
           </Card>
