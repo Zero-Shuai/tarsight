@@ -36,12 +36,13 @@ async function getExecutionDetails(executionId: string) {
     module_name: result.test_case?.module?.name || 'Unknown',
     method: result.test_case?.method,
     url: result.test_case?.url,
-    response_time: result.duration,
-    response_code: result.response_info?.Status_Code,
+    // 修复字段映射和数据类型转换
+    response_time: result.duration ? Math.round(Number(result.duration) * 1000) : 0,  // 转秒为毫秒
+    response_code: result.response_info?.Code || result.response_info?.Status_Code,  // 兼容两种字段名
     request_headers: result.request_info?.Headers,
     request_body: result.request_info?.Body,
     response_headers: result.response_info?.Headers,
-    response_body: result.response_info?.Body
+    response_body: result.response_info?.Body || result.response_info?.Data  // Body 或 Data
   }))
 
   return {
