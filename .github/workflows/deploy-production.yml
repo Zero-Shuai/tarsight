@@ -23,6 +23,8 @@ jobs:
           key: ${{ secrets.PRODUCTION_SSH_KEY }}
           port: ${{ secrets.PRODUCTION_PORT || 22 }}
           script_stop: true
+          timeout: 60s
+          command_timeout: 30m
           script: |
             RED='\033[0;31m'
             GREEN='\033[0;32m'
