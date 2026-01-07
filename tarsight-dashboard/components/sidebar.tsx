@@ -78,13 +78,13 @@ export function Sidebar() {
               className={cn(
                 'group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
                 isActive
-                  ? 'bg-blue-600/10 text-blue-400'
+                  ? 'bg-gradient-to-r from-blue-600/15 to-blue-600/5 text-blue-400'
                   : 'text-slate-400 hover:text-slate-100 hover:bg-white/5'
               )}
             >
-              {/* 激活态的左侧蓝色亮条 */}
+              {/* 激活态的左侧蓝色亮条 (3px) */}
               {isActive && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-0.5 bg-blue-400 rounded-full" />
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-[3px] bg-gradient-to-b from-blue-400 to-blue-500 rounded-full" />
               )}
 
               <Icon className="h-5 w-5 flex-shrink-0" />

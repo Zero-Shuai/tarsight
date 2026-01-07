@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { CheckCircle2, XCircle, Clock, PlayCircle, ChevronRight, MoreVertical } from 'lucide-react'
+import { CheckCircle2, XCircle, Clock, PlayCircle, Copy, X, Eye } from 'lucide-react'
 import type { TestExecution } from '@/lib/types/database'
 
 interface ExecutionListCompactProps {
@@ -32,26 +32,26 @@ function getStatusInfo(status: string) {
       text: '运行中',
       className: 'bg-blue-50 text-blue-600 border-blue-100',
       icon: PlayCircle,
-      barColor: 'bg-blue-500'
+      barColor: 'bg-blue-500/50'
     },
     completed: {
       text: '已完成',
       className: 'bg-emerald-50 text-emerald-600 border-emerald-100',
       icon: CheckCircle2,
-      barColor: 'bg-emerald-500'
+      barColor: 'bg-emerald-500/50'
     },
     failed: {
       text: '失败',
       className: 'bg-rose-50 text-rose-600 border-rose-100',
       icon: XCircle,
-      barColor: 'bg-rose-500'
+      barColor: 'bg-rose-500/50'
     }
   }
   return info[status as keyof typeof info] || {
     text: status,
     className: 'bg-slate-50 text-slate-600 border-slate-100',
     icon: Clock,
-    barColor: 'bg-slate-400'
+    barColor: 'bg-slate-400/50'
   }
 }
 
@@ -63,7 +63,7 @@ export function ExecutionListCompact({ executions }: ExecutionListCompactProps) 
       {/* List Container */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-50 overflow-hidden">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-100">
+        <div className="px-6 py-3 border-b border-slate-100">
           <div className="grid grid-cols-12 gap-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
             <div className="col-span-4">执行信息</div>
             <div className="col-span-2 text-center">总用例</div>
@@ -86,17 +86,17 @@ export function ExecutionListCompact({ executions }: ExecutionListCompactProps) 
               <div
                 key={execution.id}
                 onClick={() => setSelectedExecution(execution)}
-                className="group relative flex items-center px-6 py-4 hover:bg-blue-50/50 transition-colors duration-150 cursor-pointer"
+                className="group relative flex items-center px-6 py-3 hover:bg-[#F8FAFC] transition-colors duration-150 cursor-pointer"
               >
-                {/* Status Indicator Bar (4px) */}
-                <div className={`absolute left-0 top-0 bottom-0 w-1 ${statusInfo.barColor}`} />
+                {/* Status Indicator Bar (3px, 50% opacity) */}
+                <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${statusInfo.barColor}`} />
 
                 {/* Content Grid */}
                 <div className="grid grid-cols-12 gap-4 items-center flex-1 ml-2">
                   {/* Execution Name & Timestamp */}
                   <div className="col-span-4 min-w-0">
-                    <div className="flex items-center gap-3">
-                      <StatusIcon className={`h-5 w-5 flex-shrink-0 ${statusInfo.icon === PlayCircle ? 'text-blue-600' : statusInfo.icon === CheckCircle2 ? 'text-emerald-600' : 'text-rose-600'}`} />
+                    <div className="flex items-center gap-2.5">
+                      <StatusIcon className={`h-4 w-4 flex-shrink-0 ${statusInfo.icon === PlayCircle ? 'text-blue-600' : statusInfo.icon === CheckCircle2 ? 'text-emerald-600' : 'text-rose-600'}`} />
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-semibold text-slate-900 truncate group-hover:text-blue-600 transition-colors">
                           {execution.execution_name}
@@ -123,7 +123,7 @@ export function ExecutionListCompact({ executions }: ExecutionListCompactProps) 
                     <p className="text-lg font-bold text-rose-600">{execution.failed_tests}</p>
                   </div>
 
-                  {/* Success Rate Badge */}
+                  {/* Success Rate Badge - High Contrast */}
                   <div className="col-span-2 flex justify-center">
                     <Badge
                       variant="outline"
@@ -132,7 +132,7 @@ export function ExecutionListCompact({ executions }: ExecutionListCompactProps) 
                           ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
                           : passRate >= 50
                           ? 'bg-amber-50 text-amber-600 border-amber-100'
-                          : 'bg-rose-50 text-rose-600 border-rose-100'
+                          : 'bg-rose-50 text-rose-700 border-rose-100'
                       }`}
                     >
                       {passRate.toFixed(1)}%
@@ -140,8 +140,19 @@ export function ExecutionListCompact({ executions }: ExecutionListCompactProps) 
                   </div>
                 </div>
 
-                {/* Action Icon */}
-                <ChevronRight className="h-5 w-5 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all duration-200 ml-4 flex-shrink-0" />
+                {/* Ghost "View" Button - Only on Hover */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="ml-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-blue-50 hover:text-blue-600 rounded-lg text-sm font-medium"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setSelectedExecution(execution)
+                  }}
+                >
+                  <Eye className="h-4 w-4 mr-1.5" />
+                  查看
+                </Button>
               </div>
             )
           })}
@@ -193,6 +204,10 @@ function ExecutionDetailsDrawer({
     : 0
   const statusInfo = getStatusInfo(execution.status)
 
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(execution.id)
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex">
       {/* Backdrop */}
@@ -218,31 +233,31 @@ function ExecutionDetailsDrawer({
             variant="ghost"
             size="sm"
             onClick={onClose}
-            className="rounded-lg hover:bg-slate-100"
+            className="rounded-lg hover:bg-slate-100 h-8 w-8 p-0"
           >
-            <MoreVertical className="h-5 w-5" />
+            <X className="h-4 w-4" />
           </Button>
         </div>
 
         {/* Drawer Content */}
         <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
-          {/* Statistics Cards */}
+          {/* Statistics Cards - Minimalist Design */}
           <div className="grid grid-cols-4 gap-4">
-            <div className="bg-slate-50 rounded-lg p-4 text-center">
-              <p className="text-2xl font-bold text-slate-900">{execution.total_tests}</p>
-              <p className="text-xs text-slate-500 mt-1">总用例</p>
+            <div className="text-center py-3">
+              <p className="text-3xl font-bold text-slate-900">{execution.total_tests}</p>
+              <p className="text-xs font-medium text-slate-500 mt-1">总用例</p>
             </div>
-            <div className="bg-emerald-50 rounded-lg p-4 text-center">
-              <p className="text-2xl font-bold text-emerald-600">{execution.passed_tests}</p>
-              <p className="text-xs text-slate-500 mt-1">通过</p>
+            <div className="text-center py-3">
+              <p className="text-3xl font-bold text-emerald-600">{execution.passed_tests}</p>
+              <p className="text-xs font-medium text-slate-500 mt-1">通过</p>
             </div>
-            <div className="bg-rose-50 rounded-lg p-4 text-center">
-              <p className="text-2xl font-bold text-rose-600">{execution.failed_tests}</p>
-              <p className="text-xs text-slate-500 mt-1">失败</p>
+            <div className="text-center py-3">
+              <p className="text-3xl font-bold text-rose-600">{execution.failed_tests}</p>
+              <p className="text-xs font-medium text-slate-500 mt-1">失败</p>
             </div>
-            <div className="bg-amber-50 rounded-lg p-4 text-center">
-              <p className="text-2xl font-bold text-amber-600">{execution.skipped_tests}</p>
-              <p className="text-xs text-slate-500 mt-1">跳过</p>
+            <div className="text-center py-3">
+              <p className="text-3xl font-bold text-amber-600">{execution.skipped_tests}</p>
+              <p className="text-xs font-medium text-slate-500 mt-1">跳过</p>
             </div>
           </div>
 
@@ -257,7 +272,7 @@ function ExecutionDetailsDrawer({
             </div>
           )}
 
-          {/* Success Rate Progress */}
+          {/* Success Rate Progress - 8px height */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-slate-700">通过率</span>
@@ -277,9 +292,20 @@ function ExecutionDetailsDrawer({
           <div className="space-y-3">
             <h3 className="text-sm font-semibold text-slate-900">执行详情</h3>
             <div className="space-y-2 text-sm">
-              <div className="flex justify-between py-2 border-b border-slate-100">
+              <div className="flex justify-between items-center py-2 border-b border-slate-100">
                 <span className="text-slate-500">执行 ID</span>
-                <span className="font-mono text-slate-700">{execution.id.slice(0, 8)}...</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-slate-700">{execution.id.slice(0, 8)}...</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={copyToClipboard}
+                    className="h-6 w-6 p-0 hover:bg-slate-100 rounded-md"
+                    title="复制 ID"
+                  >
+                    <Copy className="h-3.5 w-3.5 text-slate-400" />
+                  </Button>
+                </div>
               </div>
               <div className="flex justify-between py-2 border-b border-slate-100">
                 <span className="text-slate-500">开始时间</span>
@@ -299,13 +325,13 @@ function ExecutionDetailsDrawer({
           </div>
         </div>
 
-        {/* Drawer Footer */}
+        {/* Drawer Footer - Primary CTA Button with Shadow */}
         <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50">
           <Button variant="outline" onClick={onClose} className="rounded-lg">
             关闭
           </Button>
           <Link href={`/executions/${execution.id}`}>
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200">
               查看完整报告
             </Button>
           </Link>
