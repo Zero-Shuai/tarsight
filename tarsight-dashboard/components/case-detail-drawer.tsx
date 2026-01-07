@@ -16,6 +16,13 @@ interface CaseDetailDrawerProps {
 // Simple syntax highlighting for JSON
 function syntaxHighlight(json: string) {
   if (!json) return null
+
+  // Check if it's an empty object or array
+  const trimmed = json.trim()
+  if (trimmed === '{}' || trimmed === '[]') {
+    return `<span class="text-slate-400 italic">${trimmed}</span>`
+  }
+
   try {
     const obj = JSON.parse(json)
     const jsonString = JSON.stringify(obj, null, 2)
@@ -33,14 +40,73 @@ function syntaxHighlight(json: string) {
       })
       .replace(/\b(true|false|null)\b/g, '<span class="text-amber-600">$1</span>')
       .replace(/\b(-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)\b/g, '<span class="text-green-600">$1</span>')
-  } catch {
-    return <span className="text-slate-500">{json}</span>
+  } catch (error) {
+    // Return escaped HTML string (not JSX) for dangerouslySetInnerHTML
+    console.error('JSON parsing error:', error, 'Input:', json)
+    const escaped = json
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+    return `<span class="text-slate-500">${escaped}</span>`
+  }
+}
+
+// Helper to safely stringify data for syntax highlighting
+function safeStringify(data: any): string | null {
+  if (!data) return null
+
+  // If already a string, check if it's valid JSON
+  if (typeof data === 'string') {
+    try {
+      JSON.parse(data)
+      return data // It's valid JSON string, use as-is
+    } catch {
+      // Not a JSON string, escape and return as plain text
+      return data
+    }
+  }
+
+  // If an object, stringify it
+  try {
+    return JSON.stringify(data, null, 2)
+  } catch (error) {
+    console.error('Stringification error:', error, 'Data:', data)
+    return String(data)
   }
 }
 
 export function CaseDetailDrawer({ caseResult, allCases, onClose, onNavigate }: CaseDetailDrawerProps) {
   const [activeTab, setActiveTab] = useState<'request' | 'response'>('response')
   const [copied, setCopied] = useState(false)
+
+  // Debug: 查看实际数据
+  useEffect(() => {
+    if (caseResult) {
+      console.log('🔍 CaseDetailDrawer received data:', {
+        id: caseResult.id,
+        status: caseResult.status,
+        response_time: caseResult.response_time,
+        response_code: caseResult.response_code,
+        module_name: caseResult.module_name,
+        method: caseResult.method,
+        has_request_headers: !!caseResult.request_headers,
+        has_request_body: !!caseResult.request_body,
+        has_response_headers: !!caseResult.response_headers,
+        has_response_body: !!caseResult.response_body,
+        request_headers_type: typeof caseResult.request_headers,
+        request_body_type: typeof caseResult.request_body,
+        response_headers_type: typeof caseResult.response_headers,
+        response_body_type: typeof caseResult.response_body,
+        request_headers_value: caseResult.request_headers,
+        request_body_value: caseResult.request_body,
+        response_headers_value: caseResult.response_headers,
+        response_body_value: caseResult.response_body,
+        original_request_info: (caseResult as any).request_info,
+        original_response_info: (caseResult as any).response_info,
+        full_data: caseResult
+      })
+    }
+  }, [caseResult])
 
   // Keyboard navigation
   useEffect(() => {
@@ -232,7 +298,7 @@ export function CaseDetailDrawer({ caseResult, allCases, onClose, onNavigate }: 
                     </div>
                     <div className="bg-slate-50 rounded-lg p-4 overflow-x-auto">
                       <pre className="text-xs font-mono">
-                        {syntaxHighlight(JSON.stringify(caseResult.request_headers, null, 2))}
+                        {syntaxHighlight(safeStringify(caseResult.request_headers) || '')}
                       </pre>
                     </div>
                   </div>
@@ -254,7 +320,7 @@ export function CaseDetailDrawer({ caseResult, allCases, onClose, onNavigate }: 
                     </div>
                     <div className="bg-slate-50 rounded-lg p-4 overflow-x-auto">
                       <pre className="text-xs font-mono">
-                        {syntaxHighlight(JSON.stringify(caseResult.request_body, null, 2))}
+                        {syntaxHighlight(safeStringify(caseResult.request_body) || '')}
                       </pre>
                     </div>
                   </div>
@@ -281,7 +347,7 @@ export function CaseDetailDrawer({ caseResult, allCases, onClose, onNavigate }: 
                     </div>
                     <div className="bg-slate-50 rounded-lg p-4 overflow-x-auto">
                       <pre className="text-xs font-mono">
-                        {syntaxHighlight(JSON.stringify(caseResult.response_headers, null, 2))}
+                        {syntaxHighlight(safeStringify(caseResult.response_headers) || '')}
                       </pre>
                     </div>
                   </div>
@@ -303,7 +369,7 @@ export function CaseDetailDrawer({ caseResult, allCases, onClose, onNavigate }: 
                     </div>
                     <div className="bg-slate-50 rounded-lg p-4 overflow-x-auto max-h-96">
                       <pre className="text-xs font-mono overflow-auto">
-                        {syntaxHighlight(JSON.stringify(caseResult.response_body, null, 2))}
+                        {syntaxHighlight(safeStringify(caseResult.response_body) || '')}
                       </pre>
                     </div>
                   </div>
