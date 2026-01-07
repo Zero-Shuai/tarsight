@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { Suspense } from 'react'
-import { ExecutionDetailPage, ExecutionDetailPageWrapper } from '@/components/execution-detail-page'
+import { ExecutionDetailPage as ExecutionDetailPageClient, ExecutionDetailPageWrapper } from '@/components/execution-detail-page'
 import { ExecutionDetailSkeleton } from '@/components/execution-detail-skeleton'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -33,7 +33,7 @@ async function getExecutionDetails(executionId: string) {
   }
 }
 
-export default async function ExecutionDetailPage({
+export default async function ExecutionDetailPageRoute({
   params
 }: {
   params: { id: string }
@@ -60,7 +60,7 @@ export default async function ExecutionDetailPage({
 
   return (
     <Suspense fallback={<ExecutionDetailPageWrapper />}>
-      <ExecutionDetailPage execution={execution} testResults={testResults} />
+      <ExecutionDetailPageClient execution={execution} testResults={testResults} />
     </Suspense>
   )
 }
