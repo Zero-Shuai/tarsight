@@ -154,13 +154,13 @@ export async function POST(request: NextRequest) {
     }
 
     // 创建执行记录
-    const executionTypeNames = {
+    const executionTypeNames: Record<string, string> = {
       'specific': '指定用例',
       'all': '全部用例',
       'modules': `模块(${module_names?.join(',') || module_ids?.join(',')})`,
       'levels': `等级(${levels?.join(',')})`
     }
-    const executionName = `${executionTypeNames[execution_type]}执行 - ${new Date().toLocaleString('zh-CN')}`
+    const executionName = `${executionTypeNames[execution_type] || '测试'}执行 - ${new Date().toLocaleString('zh-CN')}`
     console.log(`[${new Date().toISOString()}] 准备创建执行记录: ${executionName}`)
 
     const { data: execution, error: execError } = await supabase
