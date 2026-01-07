@@ -39,23 +39,23 @@ function getStatusInfo(status: string) {
   const info = {
     running: {
       text: '运行中',
-      className: 'bg-blue-50 text-blue-700 border-blue-200',
+      className: 'bg-blue-50 text-blue-600 border-blue-100',
       icon: PlayCircle
     },
     completed: {
       text: '已完成',
-      className: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      className: 'bg-emerald-50 text-emerald-600 border-emerald-100',
       icon: CheckCircle2
     },
     failed: {
       text: '失败',
-      className: 'bg-rose-50 text-rose-700 border-rose-200',
+      className: 'bg-rose-50 text-rose-600 border-rose-100',
       icon: XCircle
     }
   }
   return info[status as keyof typeof info] || {
     text: status,
-    className: 'bg-slate-50 text-slate-700 border-slate-200',
+    className: 'bg-slate-50 text-slate-600 border-slate-100',
     icon: Clock
   }
 }
@@ -81,17 +81,17 @@ export default async function ExecutionsPage() {
   const { executions, projectId } = await getExecutions()
 
   return (
-    <div className="min-h-screen bg-slate-50 py-12 px-8">
+    <div className="min-h-screen bg-slate-50 py-12 px-4 sm:px-8">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* 页面标题 */}
-        <div className="space-y-2">
+        <div className="space-y-2 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100 ease-out">
           <h1 className="text-3xl font-semibold tracking-tight text-slate-900">执行历史</h1>
           <p className="text-slate-500">查看所有测试执行记录</p>
         </div>
 
         {/* 执行列表 */}
         <div className="space-y-4">
-          {executions.map((execution) => {
+          {executions.map((execution, index) => {
             const passRate = execution.total_tests > 0
               ? (execution.passed_tests / execution.total_tests) * 100
               : 0
@@ -100,7 +100,7 @@ export default async function ExecutionsPage() {
 
             return (
               <Link href={`/executions/${execution.id}`} key={execution.id}>
-                <Card className="rounded-xl shadow-sm border-slate-200 hover:shadow-md transition-all duration-200 cursor-pointer group">
+                <Card className="rounded-xl shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group bg-white border border-slate-50 animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out" style={{ animationDelay: `${(index + 2) * 100}ms` }}>
                   <CardHeader className="pb-4">
                     <div className="flex items-start justify-between">
                       <div className="space-y-2 flex-1">
@@ -109,7 +109,7 @@ export default async function ExecutionsPage() {
                             <PlayCircle className="h-5 w-5 text-blue-600" />
                           </div>
                           <div>
-                            <CardTitle className="text-lg font-semibold text-slate-900 group-hover:text-blue-700 transition-colors">
+                            <CardTitle className="text-lg font-semibold text-slate-900 group-hover:text-blue-600 transition-colors">
                               {execution.execution_name}
                             </CardTitle>
                             <CardDescription className="text-slate-500 text-xs font-mono mt-1">
@@ -128,8 +128,8 @@ export default async function ExecutionsPage() {
                     <div className="space-y-4">
                       {/* 错误信息提示 */}
                       {execution.error_message && (
-                        <div className="p-4 bg-rose-50 border border-rose-200 rounded-lg">
-                          <p className="text-sm text-rose-800 font-medium flex items-center gap-2">
+                        <div className="p-4 bg-rose-50 border border-rose-100 rounded-lg">
+                          <p className="text-sm text-rose-600 font-medium flex items-center gap-2">
                             <XCircle className="h-4 w-4" />
                             {execution.error_message}
                           </p>
@@ -180,12 +180,16 @@ export default async function ExecutionsPage() {
 
           {/* 空状态 */}
           {executions.length === 0 && (
-            <Card className="rounded-xl shadow-sm border-slate-200">
-              <CardContent className="py-16">
+            <Card className="rounded-xl shadow-sm bg-white border border-slate-50 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200 ease-out">
+              <CardContent className="py-20">
                 <div className="text-center">
-                  <PlayCircle className="h-12 w-12 mx-auto text-slate-300 mb-4" />
-                  <h3 className="text-lg font-semibold text-slate-700 mb-2">暂无执行记录</h3>
-                  <p className="text-sm text-slate-500">执行测试后，记录将显示在这里</p>
+                  <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-blue-50 to-slate-100 mb-6">
+                    <PlayCircle className="h-12 w-12 text-blue-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-slate-900 mb-3">暂无执行记录</h3>
+                  <p className="text-sm text-slate-500 mb-6 max-w-md mx-auto leading-relaxed">
+                    执行测试后，您的测试记录将显示在这里。您可以随时查看每次执行的详细结果。
+                  </p>
                 </div>
               </CardContent>
             </Card>
