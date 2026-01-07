@@ -2886,12 +2886,629 @@ sudo bash scripts/auto-deploy.sh
 
 ---
 
-**Last Updated**: 2026-01-07 (上午)
+## 📅 2026-01-07 开发日志：执行详情页面重构
+
+### 🎯 任务目标
+
+重构"测试执行详情"页面，支持大规模数据展示和高信息密度：
+- 粘性筛选头部（状态过滤、搜索、模块筛选）
+- 按模块分组的可折叠列表
+- 紧凑的用例行设计（48px 高度）
+- 深度详情侧边抽屉（Request/Response JSON 展示）
+- 键盘导航支持
+
+---
+
+### 🔧 核心技术问题与解决方案
+
+#### 问题 1: 组件命名冲突导致无限递归 ⭐⭐⭐
+
+**错误表现：**
+```
+Error: Cannot read properties of undefined (reading 'id')
+```
+
+**根本原因：**
+```typescript
+// ❌ 错误：组件命名冲突
+import { ExecutionDetailPage } from '@/components/execution-detail-page'
+
+export default async function ExecutionDetailPage({ params }) {
+  // 组件名与导入的组件同名，导致递归调用
+}
+```
+
+**解决方案：**
+```typescript
+// ✅ 正确：使用 import alias
+import { ExecutionDetailPage as ExecutionDetailPageClient } from '@/components/execution-detail-page'
+
+export default async function ExecutionDetailPageRoute({ params }) {
+  // 页面组件使用不同的名称
+  return <ExecutionDetailPageClient {...props} />
+}
+```
+
+**经验教训：**
+- **Next.js 14 App Router 中**，Server Component 和 Client Component 不能同名
+- **最佳实践**：始终为导入的组件添加别名（如 `as XXXClient`）
+- **调试技巧**：使用 `console.log` 在组件入口处追踪调用栈
+
+---
+
+#### 问题 2: Supabase 嵌套查询数据未扁平化 ⭐⭐⭐
+
+**错误表现：**
+- 模块名称显示 "Unknown"
+- 响应时间全部显示 "0ms"
+- 测试名称和 ID 为空
+
+**根本原因：**
+Supabase 嵌套查询返回多层嵌套结构，但组件期望扁平化的数据：
+
+```typescript
+// Supabase 返回的嵌套结构
+{
+  id: "result-id",
+  test_case: {
+    case_id: "API001",
+    test_name: "Create User",
+    module: {
+      name: "User Management"
+    }
+  },
+  duration: "0.514",  // 字符串，不是数字！
+  response_info: {
+    Code: 200,        // 注意是 Code，不是 Status_Code
+    Data: {...}        // 注意是 Data，不是 Body
+  }
+}
+```
+
+**解决方案：**
+```typescript
+// ✅ 在服务端组件中扁平化数据
+const flattenedResults = testResults.map((result: any) => ({
+  ...result,
+  // 从嵌套对象中提取便捷访问字段
+  case_id: result.test_case?.case_id,
+  test_name: result.test_case?.test_name,
+  module_name: result.test_case?.module?.name || 'Unknown',
+  method: result.test_case?.method,
+  url: result.test_case?.url,
+
+  // 修复字段映射和数据类型转换
+  response_time: result.duration ? Math.round(Number(result.duration) * 1000) : 0,
+  response_code: result.response_info?.Code || result.response_info?.Status_Code,
+  request_headers: result.request_info?.Headers,
+  request_body: result.request_info?.Body,
+  response_headers: result.response_info?.Headers,
+  response_body: result.response_info?.Body || result.response_info?.Data
+}))
+```
+
+**类型定义：**
+```typescript
+// lib/types/database.ts
+export type TestCaseResult = {
+  // test_results 表字段
+  id: string
+  execution_id: string
+  test_case_id: string
+  status: 'passed' | 'failed' | 'skipped'
+  duration: number
+  error_message?: string
+  request_info?: { URL, Method, Headers, Body... }
+  response_info?: { Code, Headers, Body, Data... }
+  created_at: string
+
+  // test_cases 表字段（嵌套）
+  test_case?: {
+    case_id: string
+    test_name: string
+    method: string
+    url: string
+    module?: { name: string }
+    ...
+  }
+
+  // 便捷访问字段（扁平化）
+  case_id?: string
+  test_name?: string
+  module_name?: string
+  response_time?: number
+  response_code?: number
+  request_headers?: Record<string, string>
+  request_body?: Record<string, any>
+  response_headers?: Record<string, string>
+  response_body?: any
+}
+```
+
+**经验教训：**
+1. **Supabase 嵌套查询**返回的是树形结构，必须扁平化
+2. **数据库字段名可能与预期不符**（如 `Code` vs `Status_Code`）
+3. **数据类型可能不一致**（duration 是字符串 "0.514"，不是数字）
+4. **使用 `||` 运算符兼容多种字段名**（`Body || Data`）
+5. **类型转换很重要**（`Number(duration) * 1000` 转换为毫秒）
+
+---
+
+#### 问题 3: JSON 语法高亮显示为原始 HTML ⭐⭐
+
+**错误表现：**
+```
+<span class="text-blue-600">"Authorization"</span>: <span class="text-green-600">"Bearer token"</span>
+```
+
+**根本原因：**
+```tsx
+// ❌ 错误：React 会转义 HTML 字符串
+<pre className="text-xs font-mono">
+  {syntaxHighlight(JSON.stringify(data, null, 2))}
+</pre>
+```
+
+`syntaxHighlight` 函数返回 HTML 字符串，但 JSX 中直接使用会被转义。
+
+**解决方案：**
+```tsx
+// ✅ 正确：使用 dangerouslySetInnerHTML
+<pre
+  className="text-xs font-mono"
+  dangerouslySetInnerHTML={{
+    __html: syntaxHighlight(safeStringify(data) || '') || ''
+  }}
+/>
+```
+
+**辅助函数：**
+```typescript
+// 安全的字符串化，处理字符串和对象
+function safeStringify(data: any): string | null {
+  if (!data) return null
+
+  if (typeof data === 'string') {
+    try {
+      JSON.parse(data)  // 验证是否为有效 JSON
+      return data  // 是有效 JSON 字符串，直接使用
+    } catch {
+      return data  // 不是 JSON，返回原始字符串
+    }
+  }
+
+  // 对象则序列化
+  try {
+    return JSON.stringify(data, null, 2)
+  } catch (error) {
+    console.error('Stringification error:', error)
+    return String(data)
+  }
+}
+```
+
+**经验教训：**
+1. **`dangerouslySetInnerHTML`** 是渲染 HTML 字符串的唯一正确方法
+2. **返回类型必须一致**：syntaxHighlight 的 catch 块之前返回 JSX，应该返回 HTML 字符串
+3. **数据验证很重要**：使用 `safeStringify` 处理不同输入类型
+4. **安全性**：`dangerouslySetInnerHTML` 只用于可信数据（我们自己的 JSON）
+
+---
+
+#### 问题 4: 固定宽度网格系统防止列压缩 ⭐⭐
+
+**问题：**
+使用 `grid-cols-12` 和 `gap-4` 的响应式网格导致列宽度不一致，action 按钮压缩其他列。
+
+**解决方案：**
+```tsx
+// ✅ 使用固定像素宽度的 CSS Grid
+<div
+  className="grid items-center"
+  style={{ gridTemplateColumns: '48px 1fr 100px 100px 100px 120px 80px' }}
+>
+  {/* 列定义：
+       - 48px: 状态图标
+       - 1fr: 执行信息（flexible）
+       - 100px: 总用例（居中）
+       - 100px: 通过数（居中）
+       - 100px: 失败数（居中）
+       - 120px: 通过率（居中）
+       - 80px: 操作按钮（固定）
+  */}
+</div>
+```
+
+**表头和数据行使用完全相同的列定义：**
+```tsx
+{/* Header */}
+<div style={{ gridTemplateColumns: '48px 1fr 100px 100px 100px 120px 80px' }}>
+  <div></div>
+  <div>执行信息</div>
+  <div className="text-center">总用例</div>
+  ...
+</div>
+
+{/* Data Row - 完全相同的列定义 */}
+<div style={{ gridTemplateColumns: '48px 1fr 100px 100px 100px 120px 80px' }}>
+  <StatusIcon />
+  <div>Execution Name</div>
+  <div className="text-center">20</div>
+  ...
+</div>
+```
+
+**经验教训：**
+1. **固定像素宽度**确保列不会压缩或错位
+2. **表头和数据行必须使用完全相同的 gridTemplateColumns**
+3. **使用 `1fr` 为需要自适应的列分配剩余空间**
+4. **数值列使用 `text-center` 确保完美居中对齐**
+
+---
+
+#### 问题 5: 通过率计算方法优化 ⭐
+
+**之前的计算：**
+```typescript
+passRate = (passed_tests / total_tests) * 100
+```
+
+**问题：**
+跳过的用例也会被计入分母，导致通过率不准确。
+
+**新的计算：**
+```typescript
+// 排除跳过的用例，只计算实际执行的用例
+const executedTests = total_tests - (skipped_tests || 0)
+const passRate = executedTests > 0
+  ? (passed_tests / executedTests) * 100
+  : 0
+```
+
+**示例：**
+- 总用例：20
+- 通过：10
+- 失败：2
+- 跳过：8
+
+**旧方法：** 10 / 20 = 50%
+**新方法：** 10 / (20 - 8) = 83.3%
+
+**经验教训：**
+- **通过率应该反映实际执行的测试质量**
+- **跳过的用例不应影响通过率**（通常因为条件不满足或其他原因）
+
+---
+
+### 📦 新增组件清单
+
+#### 1. **ExecutionDetailPage** (`components/execution-detail-page.tsx`)
+客户端组件，负责：
+- 筛选状态管理（搜索、状态、模块）
+- 数据分组（按模块折叠）
+- 键盘导航（↑↓ 切换用例，Esc 关闭抽屉）
+
+#### 2. **FilterHeader** (`components/execution-filter-header.tsx`)
+粘性筛选头部：
+- 状态快捷筛选按钮（全部/通过/失败/跳过）
+- 防抖搜索输入
+- 模块下拉选择
+- 清除筛选按钮
+
+#### 3. **CollapsibleModuleGroup** (`components/collapsible-module-group.tsx`)
+可折叠模块分组：
+- 手风琴式展开/收起
+- 每个模块显示统计（通过/失败/跳过）
+- 紧凑的用例行列表
+
+#### 4. **CompactCaseRow** (`components/compact-case-row.tsx`)
+紧凑用例行（48px 高度）：
+- 响应时间颜色编码（<200ms 绿色，200-800ms 橙色，>800ms 红色）
+- 仅在 hover 时显示操作按钮
+- 支持点击查看详情
+
+#### 5. **CaseDetailDrawer** (`components/case-detail-drawer.tsx`)
+详情侧边抽屉：
+- Request/Response Headers 和 Body
+- JSON 语法高亮
+- 错误日志控制台式展示
+- 键盘导航支持
+
+#### 6. **ExecutionDetailSkeleton** (`components/execution-detail-skeleton.tsx`)
+加载骨架屏：
+- 完美匹配真实内容结构
+- 使用 `animate-pulse` 淡入淡出效果
+- 不同层级使用不同灰色
+
+---
+
+### 🎨 UI/UX 改进清单
+
+#### 颜色系统标准化
+
+**状态颜色（精确的 HEX 值）：**
+```typescript
+const statusColors = {
+  passed: '#10B981',   // Emerald-500
+  failed: '#EF4444',   // Red-500
+  running: '#3B82F6',  // Blue-500
+  skipped: '#64748B'   // Slate-500
+}
+```
+
+**通过率徽章动态颜色：**
+```typescript
+// 100% 通过（深绿背景 + 深绿文字）
+'bg-[#DCFCE7] text-[#166534] border-emerald-200'
+
+// <100% 通过（深红背景 + 深红文字）
+'bg-[#FEE2E2] text-[#991B1B] border-rose-200'
+```
+
+**响应时间颜色编码：**
+```typescript
+function getResponseTimeColor(responseTime: number): string {
+  if (responseTime < 200) return 'text-emerald-600'  // < 200ms: 绿色
+  if (responseTime < 800) return 'text-amber-600'   // 200-800ms: 橙色
+  return 'text-rose-600'                             // > 800ms: 红色
+}
+```
+
+#### 排版规范
+
+**执行名称：**
+- 字体大小：`text-sm` (14px)
+- 字重：`font-bold`
+- 颜色：`text-[#1E293B]` (深 slate)
+
+**时间戳：**
+- 字体大小：`text-[12px]` (12px)
+- 颜色：`text-[#64748B]` (中 slate)
+- 字体：`font-mono` (等宽)
+
+**数值（总用例、通过、失败）：**
+- 字体大小：`text-lg` (18px)
+- 字重：`font-bold`
+- 对齐：`text-center`
+
+#### JSON 语法高亮对比度
+
+**Keys（更高对比度）：**
+- 无冒号：`text-[#8B5CF6]` (紫色)
+- 有冒号：`text-[#3B82F6]` (蓝色)
+
+**Values：**
+- Booleans: `text-amber-600`
+- Numbers: `text-emerald-600`
+- Strings: 默认 `text-slate-900`
+
+---
+
+### 🚀 性能优化
+
+#### 数据过滤和分组
+
+**使用 `useMemo` 缓存派生状态：**
+```typescript
+const modules = useMemo(() => {
+  const uniqueModules = [...new Set(initialResults.map((r) => r.module_name))]
+  return uniqueModules.sort()
+}, [initialResults])
+
+const filteredResults = useMemo(() => {
+  let results = initialResults
+
+  // 状态过滤
+  if (statusFilter !== 'all') {
+    results = results.filter((r) => r.status === statusFilter)
+  }
+
+  // 模块过滤
+  if (selectedModule !== 'all') {
+    results = results.filter((r) => r.module_name === selectedModule)
+  }
+
+  // 搜索过滤
+  if (searchQuery) {
+    const query = searchQuery.toLowerCase()
+    results = results.filter(
+      (r) =>
+        r.case_id?.toLowerCase().includes(query) ||
+        r.test_name?.toLowerCase().includes(query) ||
+        r.url?.toLowerCase().includes(query)
+    )
+  }
+
+  return results
+}, [initialResults, statusFilter, selectedModule, searchQuery])
+```
+
+**键盘导航使用 `useCallback`：**
+```typescript
+const handleCaseNavigate = useCallback((direction: 'up' | 'down') => {
+  if (!selectedCase) return
+
+  const currentIndex = filteredResults.findIndex((c) => c.id === selectedCase.id)
+  let newIndex = currentIndex
+
+  if (direction === 'up' && currentIndex > 0) {
+    newIndex = currentIndex - 1
+  } else if (direction === 'down' && currentIndex < filteredResults.length - 1) {
+    newIndex = currentIndex + 1
+  }
+
+  if (newIndex >= 0 && newIndex < filteredResults.length && newIndex !== currentIndex) {
+    setSelectedCase(filteredResults[newIndex])
+  }
+}, [selectedCase, filteredResults])
+```
+
+---
+
+### 📝 开发工作流最佳实践
+
+#### 1. 数据流设计原则
+
+**Server Component → Client Component 数据传递：**
+```typescript
+// ✅ Server Component 负责数据获取和扁平化
+async function getExecutionDetails(executionId: string) {
+  const { data: testResults } = await supabase
+    .from('test_results')
+    .select('*, test_case:test_cases(*, module:modules(name))')
+    .eq('execution_id', executionId)
+
+  // 在服务端扁平化数据
+  return testResults.map(flattenResult)
+}
+
+// ✅ Client Component 只负责状态管理和交互
+'use client'
+export function ExecutionDetailPage({ execution, testResults }) {
+  // testResults 已经是扁平化的，可以直接使用
+}
+```
+
+#### 2. 类型优先原则
+
+**始终先定义类型，再编写组件：**
+```typescript
+// 1. 定义数据类型
+export type TestCaseResult = {
+  id: string
+  case_id?: string
+  test_name?: string
+  module_name?: string
+  response_time?: number
+  response_code?: number
+  ...
+}
+
+// 2. 在组件中使用类型
+interface CaseDetailDrawerProps {
+  caseResult: TestCaseResult | null
+  allCases: TestCaseResult[]
+  onClose: () => void
+  onNavigate: (direction: 'up' | 'down') => void
+}
+
+// 3. 组件实现
+export function CaseDetailDrawer({ caseResult, allCases, onClose, onNavigate }: CaseDetailDrawerProps) {
+  // TypeScript 现在可以提供完整的类型检查和自动补全
+}
+```
+
+#### 3. 调试驱动开发
+
+**添加详细的日志以便追踪问题：**
+```typescript
+// 数据扁平化阶段
+const flattenedResults = testResults.map((result: any) => {
+  const flattened = { /* ... */ }
+
+  // 只记录第一条，避免日志泛滥
+  if (!result._logged) {
+    console.log('📊 Flattening test result:', {
+      original_result: result,
+      flattened_result: flattened,
+      has_request_info: !!result.request_info,
+      has_response_info: !!result.response_info,
+      request_info_keys: result.request_info ? Object.keys(result.request_info) : [],
+      response_info_keys: result.response_info ? Object.keys(result.response_info) : []
+    })
+    result._logged = true
+  }
+
+  return flattened
+})
+
+// 组件渲染阶段
+useEffect(() => {
+  if (caseResult) {
+    console.log('🔍 CaseDetailDrawer received data:', {
+      id: caseResult.id,
+      status: caseResult.status,
+      response_time: caseResult.response_time,
+      response_code: caseResult.response_code,
+      has_request_headers: !!caseResult.request_headers,
+      has_response_body: !!caseResult.response_body,
+      request_headers_type: typeof caseResult.request_headers,
+      request_headers_value: caseResult.request_headers,
+    })
+  }
+}, [caseResult])
+```
+
+#### 4. 分支开发策略
+
+**使用 `dev` 分支进行实验性开发：**
+```bash
+# 1. 创建 dev 分支
+git checkout -b dev
+
+# 2. 在 dev 分支上开发和测试
+git add .
+git commit -m "feat: new feature"
+git push origin dev
+
+# 3. 验证无误后合并到 master
+git checkout master
+git merge dev
+git push origin master
+```
+
+---
+
+### 🔍 常见问题诊断
+
+#### 诊断清单
+
+**数据未显示：**
+- [ ] 检查 Supabase 嵌套查询是否返回嵌套结构
+- [ ] 检查数据是否正确扁平化
+- [ ] 检查字段名是否匹配（`Code` vs `Status_Code`）
+- [ ] 检查数据类型是否正确（字符串 vs 数字）
+
+**UI 错位：**
+- [ ] 检查表头和数据行是否使用相同的 gridTemplateColumns
+- [ ] 检查是否有固定的列宽（像素）
+- [ ] 检查是否使用了 `text-center` 居中对齐
+
+**JSON 显示异常：**
+- [ ] 检查是否使用了 `dangerouslySetInnerHTML`
+- [ ] 检查 `syntaxHighlight` 函数返回的是否为 HTML 字符串
+- [ ] 检查 `safeStringify` 是否正确处理数据
+
+**性能问题：**
+- [ ] 检查是否使用 `useMemo` 缓存派生状态
+- [ ] 检查是否使用 `useCallback` 缓存回调函数
+- [ ] 检查是否有不必要的重新渲染
+
+---
+
+### 📚 相关提交记录
+
+今日提交（2026-01-07）：
+
+1. **a5966cf** - feat: 添加 Next.js 14 问题记录和开发工作流最佳实践
+2. **c138b15** - feat: 添加数据扁平化和类型定义
+3. **9976c5e** - fix: 修复组件命名冲突导致无限递归
+4. **2f8d03d** - fix: 修复响应详情数据展示问题
+5. **a94bc71** - fix: 修复详情抽屉数据渲染问题
+6. **28e73ff** - fix: 修复执行历史列表对齐和颜色一致性问题
+7. **ef5b291** - refactor: 固定宽度网格系统与 JSON 渲染优化
+8. **f8e26fa** - fix: 修改通过率计算方法，排除跳过的用例
+
+---
+
+**Last Updated**: 2026-01-07 (全天)
 **Latest Changes**:
-- 🐛 修复 Button 组件 asChild TypeScript 类型错误
-- 🐛 修复 Git 命令非零退出码导致脚本终止
-- 🐛 修复多行 commit message 导致 bash 语法错误
-- 🐛 **修复 Windows 换行符（CRLF）问题** - 根本原因
-- ✨ 添加 .gitattributes 防止换行符问题复发
-- ✨ 配置 core.autocrlf 自动处理换行符
+- ✨ **执行详情页面完全重构** - 粘性筛选、分组列表、紧凑行设计
+- ✨ **新增 TestCaseResult 类型定义** - 支持扁平化数据结构
+- ✨ **固定宽度网格系统** - 消除列压缩和错位问题
+- ✨ **JSON 语法高亮修复** - 使用 dangerouslySetInnerHTML 正确渲染
+- ✨ **通过率计算优化** - 排除跳过用例，更准确反映测试质量
+- 🎨 **颜色系统标准化** - 精确的 HEX 值确保一致性
+- 🎨 **高对比度徽章设计** - 提升可读性和视觉层次
+- 📝 **完整的开发经验总结** - 组件命名、数据扁平化、类型安全等
 - **Added UI/UX Design Guidelines section** - Modern dashboard design principles
