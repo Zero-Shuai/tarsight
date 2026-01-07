@@ -43,15 +43,9 @@ jobs:
             git fetch origin || true
             git pull origin master || true
 
-            # 只使用 commit message 的第一行，避免多行文本导致 bash 语法错误
-            COMMIT_MSG="${{ github.event.head_commit.message }}"
-            COMMIT_FIRST_LINE=$(echo "$COMMIT_MSG" | head -n 1)
-            
-            if [[ "$COMMIT_FIRST_LINE" == *"[no-lint]"* ]] || [[ "$COMMIT_FIRST_LINE" == *"[skip lint]"* ]]; then
-              EXTRA_ARGS="--no-lint"
-            else
-              EXTRA_ARGS=""
-            fi
+            # 在 GitHub Actions 层面处理 commit message，避免多行文本导致 bash 语法错误
+            EXTRA_ARGS=""
+            echo "${{ github.event.head_commit.message }}" | grep -qE "\[no-lint\]|\[skip\s+lint\]" && EXTRA_ARGS="--no-lint" || true
 
             echo -e "${YELLOW}开始自动部署...${NC}"
             sudo bash scripts/auto-deploy.sh $EXTRA_ARGS || {
