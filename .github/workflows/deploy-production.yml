@@ -40,8 +40,8 @@ jobs:
             cd /opt/tarsight || exit 1
 
             echo -e "${YELLOW}拉取最新代码...${NC}"
-            git fetch origin
-            git pull origin master
+            git fetch origin || true
+            git pull origin master || true
 
             COMMIT_MSG="${{ github.event.head_commit.message }}"
             if [[ "$COMMIT_MSG" == *"[no-lint]"* ]] || [[ "$COMMIT_MSG" == *"[skip lint]"* ]]; then
@@ -50,6 +50,10 @@ jobs:
               EXTRA_ARGS=""
             fi
 
-            sudo bash scripts/auto-deploy.sh $EXTRA_ARGS
+            echo -e "${YELLOW}开始自动部署...${NC}"
+            sudo bash scripts/auto-deploy.sh $EXTRA_ARGS || {
+              echo -e "${RED}❌ 自动部署失败${NC}"
+              exit 1
+            }
 
             echo -e "${GREEN}✓ 自动部署完成！${NC}"
