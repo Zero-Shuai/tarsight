@@ -36,9 +36,9 @@ async function getExecutionDetails(executionId: string) {
 export default async function ExecutionDetailPage({
   params
 }: {
-  params: Promise<{ id: string }>
+  params: { id: string } | Promise<{ id: string }>
 }) {
-  const { id } = await params
+  const { id } = await Promise.resolve(params)
   const { execution, testResults } = await getExecutionDetails(id)
 
   if (!execution) {
