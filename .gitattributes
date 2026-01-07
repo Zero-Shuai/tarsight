@@ -1,0 +1,15 @@
+# Shell scripts must use LF
+*.sh text eol=lf
+
+# Python files should use LF
+*.py text eol=lf
+
+# YAML files should use LF
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# Markdown files can use platform native
+*.md text eol=auto
+
+# JSON files should use LF
+*.json text eol=lf
