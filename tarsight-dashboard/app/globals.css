@@ -4,48 +4,225 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
-    --radius: 0.5rem;
+    /* Minimalist SaaS Design System - Light Mode */
+    --background: 210 40% 98%; /* slate-50 */
+    --foreground: 222.2 84% 4.9%; /* slate-900 */
+    --card: 0 0% 100%; /* white */
+    --card-foreground: 222.2 84% 4.9%; /* slate-900 */
+    --popover: 0 0% 100%; /* white */
+    --popover-foreground: 222.2 84% 4.9%; /* slate-900 */
+    --primary: 221.2 83.2% 53.3%; /* blue-600 */
+    --primary-foreground: 210 40% 98%; /* white */
+    --secondary: 210 40% 96.1%; /* slate-100 */
+    --secondary-foreground: 222.2 47.4% 11.2%; /* slate-900 */
+    --muted: 210 40% 96.1%; /* slate-100 */
+    --muted-foreground: 215.4 16.3% 46.9%; /* slate-500 */
+    --accent: 210 40% 96.1%; /* slate-100 */
+    --accent-foreground: 222.2 47.4% 11.2%; /* slate-900 */
+    --destructive: 0 84.2% 60.2%; /* rose-600 */
+    --destructive-foreground: 210 40% 98%; /* white */
+    --border: 210 40% 96.1%; /* slate-100 - very subtle */
+    --input: 214.3 31.8% 91.4%; /* slate-200 */
+    --ring: 221.2 83.2% 53.3%; /* blue-600 */
+    --radius: 0.75rem; /* 12px - rounded-xl */
+
+    /* Status Colors - Low Saturation Backgrounds */
+    --status-success-bg: 150 69% 95%; /* emerald-50 */
+    --status-success-text: 160 84% 39%; /* emerald-600 */
+    --status-success-border: 160 80% 90%; /* emerald-100 */
+
+    --status-error-bg: 350 100% 96%; /* rose-50 */
+    --status-error-text: 350 89% 40%; /* rose-600 */
+    --status-error-border: 350 100% 92%; /* rose-100 */
+
+    --status-warning-bg: 48 96% 96%; /* amber-50 */
+    --status-warning-text: 48 96% 44%; /* amber-600 */
+    --status-warning-border: 48 96% 93%; /* amber-100 */
+
+    --status-info-bg: 217 91% 96%; /* blue-50 */
+    --status-info-text: 221 83% 53%; /* blue-600 */
+    --status-info-border: 217 91% 93%; /* blue-100 */
+
+    /* Sidebar Dark Theme */
+    --sidebar-bg: 222 47% 11%; /* #0f172a */
+    --sidebar-bg-50: 222 47% 11% / 0.5; /* 50% opacity */
+    --sidebar-bg-95: 222 47% 11% / 0.95; /* 95% opacity */
+    --sidebar-border: 0 0% 100% / 0.1; /* 10% white */
+    --sidebar-text: 0 0% 100%; /* white */
+    --sidebar-text-muted: 215 20% 65%; /* slate-400 */
+    --sidebar-active: 217 91% 59%; /* blue-400 */
+    --sidebar-active-bg: 217 91% 59% / 0.1; /* blue-400/10 */
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
+    /* Minimalist SaaS Design System - Dark Mode */
+    --background: 222.2 84% 4.9%; /* slate-950 */
+    --foreground: 210 40% 98%; /* slate-50 */
+    --card: 222.2 84% 4.9%; /* slate-900 */
+    --card-foreground: 210 40% 98%; /* slate-50 */
+    --popover: 222.2 84% 4.9%; /* slate-900 */
+    --popover-foreground: 210 40% 98%; /* slate-50 */
+    --primary: 217.2 91.2% 59.8%; /* blue-500 */
+    --primary-foreground: 222.2 47.4% 11.2%; /* slate-950 */
+    --secondary: 217.2 32.6% 17.5%; /* slate-800 */
+    --secondary-foreground: 210 40% 98%; /* slate-50 */
+    --muted: 217.2 32.6% 17.5%; /* slate-800 */
+    --muted-foreground: 215 20.2% 65.1%; /* slate-400 */
+    --accent: 217.2 32.6% 17.5%; /* slate-800 */
+    --accent-foreground: 210 40% 98%; /* slate-50 */
+    --destructive: 0 62.8% 30.6%; /* rose-900 */
+    --destructive-foreground: 210 40% 98%; /* white */
+    --border: 217.2 32.6% 17.5%; /* slate-800 */
+    --input: 217.2 32.6% 17.5%; /* slate-800 */
+    --ring: 224.3 76.3% 48%; /* blue-500 */
+  }
+}
+
+/* Custom Utility Classes for Minimalist SaaS Design */
+@layer utilities {
+  /* Card Styles */
+  .card-minimal {
+    @apply bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 border border-slate-50;
+  }
+
+  .card-minimal-dark {
+    @apply bg-slate-900 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 border border-slate-800;
+  }
+
+  /* Status Badges - Low Saturation */
+  .badge-success {
+    @apply bg-emerald-50 text-emerald-600 border border-emerald-100;
+  }
+
+  .badge-error {
+    @apply bg-rose-50 text-rose-600 border border-rose-100;
+  }
+
+  .badge-warning {
+    @apply bg-amber-50 text-amber-600 border border-amber-100;
+  }
+
+  .badge-info {
+    @apply bg-blue-50 text-blue-600 border border-blue-100;
+  }
+
+  .badge-neutral {
+    @apply bg-slate-50 text-slate-600 border border-slate-200;
+  }
+
+  /* Text Styles */
+  .text-heading {
+    @apply text-slate-900 font-semibold;
+  }
+
+  .text-secondary {
+    @apply text-slate-500;
+  }
+
+  .text-muted {
+    @apply text-slate-400;
+  }
+
+  /* Icon Backgrounds */
+  .icon-bg-blue {
+    @apply bg-blue-50 text-blue-600;
+  }
+
+  .icon-bg-emerald {
+    @apply bg-emerald-50 text-emerald-600;
+  }
+
+  .icon-bg-amber {
+    @apply bg-amber-50 text-amber-600;
+  }
+
+  .icon-bg-violet {
+    @apply bg-violet-50 text-violet-600;
+  }
+
+  .icon-bg-rose {
+    @apply bg-rose-50 text-rose-600;
+  }
+
+  /* Spacing Utilities (8px Grid) */
+  .space-grid-2 {
+    @apply space-y-2;
+  }
+
+  .space-grid-3 {
+    @apply space-y-3;
+  }
+
+  .space-grid-4 {
+    @apply space-y-4;
+  }
+
+  .space-grid-6 {
+    @apply space-y-6;
+  }
+
+  .space-grid-8 {
+    @apply space-y-8;
+  }
+
+  /* Gap Utilities */
+  .gap-grid-4 {
+    @apply gap-4;
+  }
+
+  .gap-grid-6 {
+    @apply gap-6;
+  }
+
+  .gap-grid-8 {
+    @apply gap-8;
+  }
+
+  /* Smooth Transitions */
+  .transition-smooth {
+    @apply transition-all duration-200 ease-out;
+  }
+
+  /* Glassmorphism */
+  .glass {
+    @apply backdrop-blur-sm bg-opacity-95;
+  }
+
+  .glass-light {
+    @apply backdrop-blur-sm bg-opacity-50;
+  }
+}
+
+/* Custom Animations */
+@layer utilities {
+  .animate-enter {
+    animation: enter 0.3s ease-out;
+  }
+
+  @keyframes enter {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.2s ease-out;
+  }
+
+  @keyframes scaleIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
   }
 }
 
