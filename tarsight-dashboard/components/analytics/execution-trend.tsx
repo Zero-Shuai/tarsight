@@ -1,5 +1,6 @@
 'use client'
 
+import { memo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   AreaChart,
@@ -22,8 +23,8 @@ interface ExecutionTrendProps {
   }>
 }
 
-// Custom floating tooltip with dots
-const CustomTooltip = ({ active, payload, label }: any) => {
+// Memoized custom tooltip
+const CustomTooltip = memo(function CustomTooltip({ active, payload, label }: any) {
   if (active && payload && payload.length) {
     return (
       <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 p-4 min-w-[160px]">
@@ -50,9 +51,9 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     )
   }
   return null
-}
+})
 
-export function ExecutionTrend({ executionTrend }: ExecutionTrendProps) {
+export const ExecutionTrend = memo(function ExecutionTrend({ executionTrend }: ExecutionTrendProps) {
   // Format date to MM-DD
   const formattedData = executionTrend.map(item => ({
     ...item,
@@ -174,4 +175,4 @@ export function ExecutionTrend({ executionTrend }: ExecutionTrendProps) {
       </CardContent>
     </Card>
   )
-}
+})

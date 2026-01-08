@@ -1,5 +1,6 @@
 'use client'
 
+import { memo, useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   PieChart,
@@ -29,8 +30,8 @@ const COLORS = [
   '#84CC16', // lime-500
 ]
 
-// Custom tooltip
-const CustomTooltip = ({ active, payload }: any) => {
+// Memoized custom tooltip
+const CustomTooltip = memo(function CustomTooltip({ active, payload }: any) {
   if (active && payload && payload.length) {
     const data = payload[0].payload
     return (
@@ -56,7 +57,7 @@ const CustomTooltip = ({ active, payload }: any) => {
     )
   }
   return null
-}
+})
 
 // Legend item with perfect alignment
 interface LegendItemProps {
@@ -66,41 +67,45 @@ interface LegendItemProps {
   percentage: number
 }
 
-const LegendItem = ({ color, moduleName, count, percentage }: LegendItemProps) => (
-  <div className="flex items-center gap-4 py-2.5">
-    {/* Color dot */}
-    <div
-      className="w-3 h-3 rounded-full flex-shrink-0"
-      style={{ backgroundColor: color }}
-    />
-    {/* Module name */}
-    <span className="text-sm font-medium tracking-tight flex-1" style={{ color: '#64748B' }}>
-      {moduleName}
-    </span>
-    {/* Count */}
-    <span className="text-sm font-semibold tracking-tight w-12 text-right" style={{ color: '#0F172A' }}>
-      {count}
-    </span>
-    {/* Percentage */}
-    <span className="text-sm font-bold tracking-tight w-14 text-right" style={{ color: '#0F172A' }}>
-      {percentage.toFixed(0)}%
-    </span>
-  </div>
-)
+const LegendItem = memo(function LegendItem({ color, moduleName, count, percentage }: LegendItemProps) {
+  return (
+    <div className="flex items-center gap-4 py-2.5">
+      {/* Color dot */}
+      <div
+        className="w-3 h-3 rounded-full flex-shrink-0"
+        style={{ backgroundColor: color }}
+      />
+      {/* Module name */}
+      <span className="text-sm font-medium tracking-tight flex-1" style={{ color: '#64748B' }}>
+        {moduleName}
+      </span>
+      {/* Count */}
+      <span className="text-sm font-semibold tracking-tight w-12 text-right" style={{ color: '#0F172A' }}>
+        {count}
+      </span>
+      {/* Percentage */}
+      <span className="text-sm font-bold tracking-tight w-14 text-right" style={{ color: '#0F172A' }}>
+        {percentage.toFixed(0)}%
+      </span>
+    </div>
+  )
+})
 
-export function ModuleDistribution({
+export const ModuleDistribution = memo(function ModuleDistribution({
   moduleTestCaseCount,
   totalTestCases
 }: ModuleDistributionProps) {
-  // Transform data for chart and sort by count
-  const chartData = Object.entries(moduleTestCaseCount)
-    .map(([moduleName, count], index) => ({
-      moduleName,
-      count,
-      percentage: totalTestCases > 0 ? (count / totalTestCases) * 100 : 0,
-      color: COLORS[index % COLORS.length]
-    }))
-    .sort((a, b) => b.count - a.count)
+  // Memoize chart data transformation
+  const chartData = useMemo(() => {
+    return Object.entries(moduleTestCaseCount)
+      .map(([moduleName, count], index) => ({
+        moduleName,
+        count,
+        percentage: totalTestCases > 0 ? (count / totalTestCases) * 100 : 0,
+        color: COLORS[index % COLORS.length]
+      }))
+      .sort((a, b) => b.count - a.count)
+  }, [moduleTestCaseCount, totalTestCases])
 
   const hasData = chartData.length > 0 && totalTestCases > 0
 
@@ -196,4 +201,4 @@ export function ModuleDistribution({
       </CardContent>
     </Card>
   )
-}
+})

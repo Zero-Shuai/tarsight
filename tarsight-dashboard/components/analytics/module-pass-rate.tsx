@@ -1,5 +1,6 @@
 'use client'
 
+import { memo, useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Target } from 'lucide-react'
 
@@ -31,7 +32,7 @@ interface ProgressBarRowProps {
   index: number
 }
 
-const ProgressBarRow = ({ moduleName, passRate, totalTests, index }: ProgressBarRowProps) => {
+const ProgressBarRow = memo(function ProgressBarRow({ moduleName, passRate, totalTests, index }: ProgressBarRowProps) {
   const color = getPassRateColor(passRate)
 
   return (
@@ -65,12 +66,14 @@ const ProgressBarRow = ({ moduleName, passRate, totalTests, index }: ProgressBar
       </div>
     </div>
   )
-}
+})
 
-export function ModulePassRate({ modulePassRates }: ModulePassRateProps) {
-  // Sort by pass rate ascending (worst first) to highlight problematic areas
-  const sortedData = [...modulePassRates]
-    .sort((a, b) => a.passRate - b.passRate)
+export const ModulePassRate = memo(function ModulePassRate({ modulePassRates }: ModulePassRateProps) {
+  // Memoize sorted data
+  const sortedData = useMemo(() => {
+    return [...modulePassRates]
+      .sort((a, b) => a.passRate - b.passRate)
+  }, [modulePassRates])
 
   // Take top 8 modules for cleaner display
   const displayData = sortedData.slice(0, 8)
@@ -170,4 +173,4 @@ export function ModulePassRate({ modulePassRates }: ModulePassRateProps) {
       </CardContent>
     </Card>
   )
-}
+})
