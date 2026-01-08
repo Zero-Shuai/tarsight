@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, memo, useCallback } from 'react'
 import { ChevronDown, ChevronRight, Play, Edit, Trash2, Search, Plus } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -220,7 +220,7 @@ interface ModuleGroupProps {
   onDelete: (testCase: TestCase) => void
 }
 
-function ModuleGroup({
+const ModuleGroup = memo(function ModuleGroup({
   moduleName,
   cases,
   isExpanded,
@@ -286,7 +286,7 @@ function ModuleGroup({
       )}
     </div>
   )
-}
+})
 
 // Test Case Row Component
 interface TestCaseRowProps {
@@ -296,7 +296,7 @@ interface TestCaseRowProps {
   onDelete: (testCase: TestCase) => void
 }
 
-function TestCaseRow({ testCase, onEdit, onRun, onDelete }: TestCaseRowProps) {
+const TestCaseRow = memo(function TestCaseRow({ testCase, onEdit, onRun, onDelete }: TestCaseRowProps) {
   const priorityStyle = getPriorityStyle(testCase.level || 'P2')
 
   return (
@@ -379,10 +379,10 @@ function TestCaseRow({ testCase, onEdit, onRun, onDelete }: TestCaseRowProps) {
       </div>
     </div>
   )
-}
+})
 
 // Adaptive Tags Component - Shows as many tags as fit
-function AdaptiveTags({ tags }: { tags: string[] }) {
+const AdaptiveTags = memo(function AdaptiveTags({ tags }: { tags: string[] }) {
   const [containerRef, setContainerRef] = useState<HTMLDivElement | null>(null)
   const [visibleCount, setVisibleCount] = useState(tags.length)
 
@@ -442,4 +442,4 @@ function AdaptiveTags({ tags }: { tags: string[] }) {
       )}
     </div>
   )
-}
+})

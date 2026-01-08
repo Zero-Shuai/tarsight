@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, memo } from 'react'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { CompactCaseRow } from './compact-case-row'
 import { Badge } from '@/components/ui/badge'
@@ -13,7 +13,7 @@ interface CollapsibleModuleGroupProps {
   onCaseClick: (caseResult: TestCaseResult) => void
 }
 
-export function CollapsibleModuleGroup({
+export const CollapsibleModuleGroup = memo(function CollapsibleModuleGroup({
   moduleName,
   cases,
   selectedCaseId,
@@ -77,4 +77,4 @@ export function CollapsibleModuleGroup({
       )}
     </div>
   )
-}
+})

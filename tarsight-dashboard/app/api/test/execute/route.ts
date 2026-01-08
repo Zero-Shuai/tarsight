@@ -2,10 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { executionQueue } from '@/lib/test-execution-queue'
 import { logError } from '@/lib/utils/error-handler'
+import { testCasesCache as cache } from '@/lib/cache/query-cache'
 
 // 简单的请求去重缓存（防止短时间内的重复请求）
 const requestCache = new Map<string, number>()
 const REQUEST_CACHE_TTL = 2000 // 2秒内相同请求视为重复
+
+// 查询结果缓存键前缀
+const CACHE_PREFIX = 'test_cases_query'
 
 /**
  * 统一的测试执行 API
@@ -89,25 +93,42 @@ export async function POST(request: NextRequest) {
         }
         selectedCaseIds = test_case_ids
 
-        const { data: specificCases, error: specificError } = await supabase
-          .from('test_cases')
-          .select('*')
-          .in('id', selectedCaseIds)
-          .eq('is_active', true)
+        // Try cache first
+        const cacheKeySpecific = { type: 'specific', ids: test_case_ids.sort() }
+        let specificCases = cache.get(CACHE_PREFIX, cacheKeySpecific)
 
-        if (specificError) throw specificError
-        testCases = specificCases || []
+        if (!specificCases) {
+          const { data, error } = await supabase
+            .from('test_cases')
+            .select('*')
+            .in('id', selectedCaseIds)
+            .eq('is_active', true)
+
+          if (error) throw error
+          specificCases = data || []
+          cache.set(CACHE_PREFIX, cacheKeySpecific, specificCases)
+        }
+
+        testCases = specificCases
         break
 
       case 'all':
-        // 全部用例
-        const { data: allCases, error: allError } = await supabase
-          .from('test_cases')
-          .select('id, case_id')
-          .eq('is_active', true)
+        // 全部用例 - use cached data
+        const cacheKeyAll = { type: 'all' }
+        let allCases = cache.get(CACHE_PREFIX, cacheKeyAll)
 
-        if (allError) throw allError
-        testCases = allCases || []
+        if (!allCases) {
+          const { data, error } = await supabase
+            .from('test_cases')
+            .select('id, case_id')
+            .eq('is_active', true)
+
+          if (error) throw error
+          allCases = data || []
+          cache.set(CACHE_PREFIX, cacheKeyAll, allCases)
+        }
+
+        testCases = allCases
         selectedCaseIds = testCases.map(c => c.id)
         break
 
@@ -117,14 +138,23 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: '请选择要执行的模块' }, { status: 400 })
         }
 
-        const { data: moduleCases, error: moduleError } = await supabase
-          .from('test_cases')
-          .select('id, case_id, module_id, modules(name)')
-          .in('module_id', module_ids)
-          .eq('is_active', true)
+        // Try cache first
+        const cacheKeyModules = { type: 'modules', ids: module_ids.sort() }
+        let moduleCases = cache.get(CACHE_PREFIX, cacheKeyModules)
 
-        if (moduleError) throw moduleError
-        testCases = moduleCases || []
+        if (!moduleCases) {
+          const { data, error } = await supabase
+            .from('test_cases')
+            .select('id, case_id, module_id, modules(name)')
+            .in('module_id', module_ids)
+            .eq('is_active', true)
+
+          if (error) throw error
+          moduleCases = data || []
+          cache.set(CACHE_PREFIX, cacheKeyModules, moduleCases)
+        }
+
+        testCases = moduleCases
         selectedCaseIds = testCases.map(c => c.id)
         break
 
@@ -134,14 +164,23 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: '请选择要执行的等级' }, { status: 400 })
         }
 
-        const { data: levelCases, error: levelError } = await supabase
-          .from('test_cases')
-          .select('id, case_id, level')
-          .in('level', levels)
-          .eq('is_active', true)
+        // Try cache first
+        const cacheKeyLevels = { type: 'levels', levels: levels.sort() }
+        let levelCases = cache.get(CACHE_PREFIX, cacheKeyLevels)
 
-        if (levelError) throw levelError
-        testCases = levelCases || []
+        if (!levelCases) {
+          const { data, error } = await supabase
+            .from('test_cases')
+            .select('id, case_id, level')
+            .in('level', levels)
+            .eq('is_active', true)
+
+          if (error) throw error
+          levelCases = data || []
+          cache.set(CACHE_PREFIX, cacheKeyLevels, levelCases)
+        }
+
+        testCases = levelCases
         selectedCaseIds = testCases.map(c => c.id)
         break
 
@@ -187,7 +226,14 @@ export async function POST(request: NextRequest) {
     const userId = user?.id
 
     // 获取环境配置
-    const projectRoot = process.env.PROJECT_ROOT || '/Users/zhangshuai/WorkSpace/Tarsight/supabase_version'
+    const projectRoot = process.env.PROJECT_ROOT
+    if (!projectRoot) {
+      console.error('PROJECT_ROOT environment variable is not set')
+      return NextResponse.json(
+        { error: '服务器配置错误: 未设置 PROJECT_ROOT 环境变量' },
+        { status: 500 }
+      )
+    }
     const pythonCmd = process.env.PYTHON_PATH || 'python3'
 
     // 构建测试用例参数

@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { previewCache as cache } from '@/lib/cache/query-cache'
 
 /**
  * 测试执行预览 API
  * 返回将要执行的测试用例数量、预计耗时、涉及模块和等级
  */
+
+const CACHE_PREFIX = 'preview_query'
 export async function POST(request: NextRequest) {
   console.log('===== 测试执行预览 API =====')
   console.log('时间:', new Date().toISOString())
@@ -36,21 +39,28 @@ export async function POST(request: NextRequest) {
     // 根据执行类型查询测试用例
     switch (execution_type) {
       case 'all': {
-        // 全部用例
-        const { data: allCases, error: allError } = await supabase
-          .from('test_cases')
-          .select('id, level, module_id, modules(name)')
-          .eq('project_id', projectId)
-          .eq('is_active', true)
+        // 全部用例 - try cache first
+        const cacheKeyAll = { type: 'all' }
+        let allCases = cache.get(CACHE_PREFIX, cacheKeyAll)
 
-        console.log('All cases query result:', { data: allCases, error: allError })
+        if (!allCases) {
+          const { data, error } = await supabase
+            .from('test_cases')
+            .select('id, level, module_id, modules(name)')
+            .eq('project_id', projectId)
+            .eq('is_active', true)
 
-        if (allError) throw allError
+          console.log('All cases query result:', { data, error })
+
+          if (error) throw error
+          allCases = data
+          cache.set(CACHE_PREFIX, cacheKeyAll, allCases)
+        }
 
         total_cases = allCases?.length || 0
         // c.modules 是一个数组，需要取第一个元素的 name
-        modules = [...new Set(allCases?.map(c => c.modules?.[0]?.name).filter(Boolean) as string[] || [])]
-        levels_found = [...new Set(allCases?.map(c => c.level).filter(Boolean) as string[] || [])]
+        modules = [...new Set(allCases?.map((c: any) => c.modules?.[0]?.name).filter(Boolean) as string[] || [])]
+        levels_found = [...new Set(allCases?.map((c: any) => c.level).filter(Boolean) as string[] || [])]
         break
       }
 
@@ -60,19 +70,27 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: '请选择要执行的模块' }, { status: 400 })
         }
 
-        const { data: moduleCases, error: moduleError } = await supabase
-          .from('test_cases')
-          .select('id, level, module_id, modules(name)')
-          .eq('project_id', projectId)
-          .in('module_id', module_ids)
-          .eq('is_active', true)
+        // Try cache first
+        const cacheKeyModules = { type: 'modules', ids: module_ids.sort() }
+        let moduleCases = cache.get(CACHE_PREFIX, cacheKeyModules)
 
-        if (moduleError) throw moduleError
+        if (!moduleCases) {
+          const { data, error } = await supabase
+            .from('test_cases')
+            .select('id, level, module_id, modules(name)')
+            .eq('project_id', projectId)
+            .in('module_id', module_ids)
+            .eq('is_active', true)
+
+          if (error) throw error
+          moduleCases = data
+          cache.set(CACHE_PREFIX, cacheKeyModules, moduleCases)
+        }
 
         total_cases = moduleCases?.length || 0
         // c.modules 是一个数组，需要取第一个元素的 name
-        modules = [...new Set(moduleCases?.map(c => c.modules?.[0]?.name).filter(Boolean) as string[] || [])]
-        levels_found = [...new Set(moduleCases?.map(c => c.level).filter(Boolean) as string[] || [])]
+        modules = [...new Set(moduleCases?.map((c: any) => c.modules?.[0]?.name).filter(Boolean) as string[] || [])]
+        levels_found = [...new Set(moduleCases?.map((c: any) => c.level).filter(Boolean) as string[] || [])]
         break
       }
 
@@ -82,19 +100,27 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: '请选择要执行的等级' }, { status: 400 })
         }
 
-        const { data: levelCases, error: levelError } = await supabase
-          .from('test_cases')
-          .select('id, level, module_id, modules(name)')
-          .eq('project_id', projectId)
-          .in('level', levels)
-          .eq('is_active', true)
+        // Try cache first
+        const cacheKeyLevels = { type: 'levels', levels: levels.sort() }
+        let levelCases = cache.get(CACHE_PREFIX, cacheKeyLevels)
 
-        if (levelError) throw levelError
+        if (!levelCases) {
+          const { data, error } = await supabase
+            .from('test_cases')
+            .select('id, level, module_id, modules(name)')
+            .eq('project_id', projectId)
+            .in('level', levels)
+            .eq('is_active', true)
+
+          if (error) throw error
+          levelCases = data
+          cache.set(CACHE_PREFIX, cacheKeyLevels, levelCases)
+        }
 
         total_cases = levelCases?.length || 0
         // c.modules 是一个数组，需要取第一个元素的 name
-        modules = [...new Set(levelCases?.map(c => c.modules?.[0]?.name).filter(Boolean) as string[] || [])]
-        levels_found = [...new Set(levelCases?.map(c => c.level).filter(Boolean) as string[] || [])]
+        modules = [...new Set(levelCases?.map((c: any) => c.modules?.[0]?.name).filter(Boolean) as string[] || [])]
+        levels_found = [...new Set(levelCases?.map((c: any) => c.level).filter(Boolean) as string[] || [])]
         break
       }
 
@@ -106,19 +132,27 @@ export async function POST(request: NextRequest) {
 
         total_cases = test_case_ids.length
 
-        // 查询指定用例的详细信息
-        const { data: specificCases, error: specificError } = await supabase
-          .from('test_cases')
-          .select('level, module_id, modules(name)')
-          .eq('project_id', projectId)
-          .in('id', test_case_ids)
-          .eq('is_active', true)
+        // Try cache first
+        const cacheKeySpecific = { type: 'specific', ids: test_case_ids.sort() }
+        let specificCases = cache.get(CACHE_PREFIX, cacheKeySpecific)
 
-        if (specificError) throw specificError
+        if (!specificCases) {
+          // 查询指定用例的详细信息
+          const { data, error } = await supabase
+            .from('test_cases')
+            .select('level, module_id, modules(name)')
+            .eq('project_id', projectId)
+            .in('id', test_case_ids)
+            .eq('is_active', true)
+
+          if (error) throw error
+          specificCases = data
+          cache.set(CACHE_PREFIX, cacheKeySpecific, specificCases)
+        }
 
         // c.modules 是一个数组，需要取第一个元素的 name
-        modules = [...new Set(specificCases?.map(c => c.modules?.[0]?.name).filter(Boolean) as string[] || [])]
-        levels_found = [...new Set(specificCases?.map(c => c.level).filter(Boolean) as string[] || [])]
+        modules = [...new Set(specificCases?.map((c: any) => c.modules?.[0]?.name).filter(Boolean) as string[] || [])]
+        levels_found = [...new Set(specificCases?.map((c: any) => c.level).filter(Boolean) as string[] || [])]
         break
       }
 

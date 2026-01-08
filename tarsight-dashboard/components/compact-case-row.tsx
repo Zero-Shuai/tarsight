@@ -1,5 +1,6 @@
 'use client'
 
+import { memo } from 'react'
 import { CheckCircle2, XCircle, Circle, Eye, RefreshCw } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -23,7 +24,7 @@ function getResponseTimeBg(responseTime: number): string {
   return 'bg-[#FEE2E2]'
 }
 
-export function CompactCaseRow({ caseResult, isSelected, onClick }: CompactCaseRowProps) {
+export const CompactCaseRow = memo(function CompactCaseRow({ caseResult, isSelected, onClick }: CompactCaseRowProps) {
   const statusIcon =
     caseResult.status === 'passed' ? (
       <CheckCircle2 className="h-4 w-4 text-[#10B981]" strokeWidth={2.5} />
@@ -98,4 +99,4 @@ export function CompactCaseRow({ caseResult, isSelected, onClick }: CompactCaseR
       </div>
     </div>
   )
-}
+})
