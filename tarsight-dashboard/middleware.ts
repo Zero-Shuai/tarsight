@@ -2,7 +2,13 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-  // 创建 Supabase 客户端
+  // 创建一个初始的 response
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  })
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -12,10 +18,14 @@ export async function middleware(request: NextRequest) {
           return request.cookies.get(name)?.value
         },
         set(name: string, value: string, options: any) {
+          // 同时更新 request 和 response 的 cookies
           request.cookies.set({ name, value, ...options })
+          response.cookies.set({ name, value, ...options })
         },
         remove(name: string, options: any) {
+          // 同时从 request 和 response 中移除 cookies
           request.cookies.set({ name, value: '', ...options })
+          response.cookies.set({ name, value: '', ...options, maxAge: 0 })
         },
       },
     }
@@ -49,7 +59,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  return NextResponse.next()
+  // 返回包含正确 cookies 的 response
+  return response
 }
 
 // 配置需要保护的路径

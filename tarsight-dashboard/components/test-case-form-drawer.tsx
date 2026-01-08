@@ -86,10 +86,34 @@ export function TestCaseFormDrawer({ testCase, modules, onClose, onSuccess }: Te
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log('🔵 [Form Submit] Starting submit process...')
+
+    // Validate required fields
+    if (!formData.test_name) {
+      alert('请输入用例名称')
+      return
+    }
+    if (!formData.url) {
+      alert('请输入请求路径')
+      return
+    }
+    if (!formData.module_id) {
+      alert('请选择所属模块')
+      return
+    }
+
     setLoading(true)
+    console.log('🔵 [Form Submit] Loading set to true, formData:', {
+      case_id: formData.case_id || previewCaseId,
+      test_name: formData.test_name,
+      level: formData.level,
+      module_id: formData.module_id
+    })
 
     try {
+      console.log('🔵 [Form Submit] Getting user...')
       const { data: { user }, error: userError } = await supabaseClient.auth.getUser()
+      console.log('🔵 [Form Submit] User result:', { user: user?.id, userError })
       if (userError || !user) {
         throw new Error('无法获取用户信息，请重新登录')
       }
@@ -113,16 +137,22 @@ export function TestCaseFormDrawer({ testCase, modules, onClose, onSuccess }: Te
         // assertions not included - may not exist in database schema
       }
 
+      console.log('🔵 [Form Submit] Payload prepared:', payload)
+
       let error
       if (testCase?.id) {
         // Update existing case
+        console.log('🔵 [Form Submit] Updating existing case, id:', testCase.id)
         const result = await supabaseClient
           .from('test_cases')
           .update(payload)
           .eq('id', testCase.id)
+          .select()
+        console.log('🔵 [Form Submit] Update result:', result)
         error = result.error
       } else {
         // Create new case
+        console.log('🔵 [Form Submit] Creating new case')
         const result = await supabaseClient
           .from('test_cases')
           .insert({
@@ -130,14 +160,19 @@ export function TestCaseFormDrawer({ testCase, modules, onClose, onSuccess }: Te
             project_id: process.env.NEXT_PUBLIC_PROJECT_ID
             // created_by will be set by database trigger/RLS policy
           })
+          .select()
+        console.log('🔵 [Form Submit] Insert result:', result)
         error = result.error
       }
 
       if (error) throw error
+      console.log('✅ [Form Submit] Success! Calling onSuccess...')
       onSuccess()
     } catch (error: any) {
+      console.error('❌ [Form Submit] Error:', error)
       alert(`${testCase?.id ? '更新' : '创建'}失败: ${error.message}`)
     } finally {
+      console.log('🔵 [Form Submit] Setting loading to false')
       setLoading(false)
     }
   }
