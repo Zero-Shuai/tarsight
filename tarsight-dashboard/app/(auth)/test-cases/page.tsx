@@ -3,8 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Plus, Play, ListChecks, Layers, CheckCircle2 } from 'lucide-react'
-import Link from 'next/link'
-import { TestCaseList } from '@/components/test-case-list'
+import { TestCasePageClient } from '@/components/test-case-page-client'
 import { TestExecutionDialog } from '@/components/test-execution-dialog'
 import type { TestCase } from '@/lib/types/database'
 
@@ -12,12 +11,28 @@ async function getTestCases() {
   const supabase = await createClient()
   const projectId = process.env.NEXT_PUBLIC_PROJECT_ID || '8786c21f-7437-4a2d-8486-9365a382b38e'
 
+  console.log('🔍 [DEBUG] PROJECT_ID from env:', process.env.NEXT_PUBLIC_PROJECT_ID)
+  console.log('🔍 [DEBUG] Using projectId:', projectId)
+
+  // First, try to get ALL test cases without filters to see if data exists
+  const { data: allTestCases, error: allError } = await supabase
+    .from('test_cases')
+    .select('id, case_id, test_name, project_id, is_active')
+    .limit(5)
+
+  console.log('📊 [DEBUG] All test cases (no filters):', {
+    count: allTestCases?.length || 0,
+    error: allError,
+    sample: allTestCases
+  })
+
+  // Now get with filters - REMOVED is_active filter to show all test cases
   const [testCases, modules] = await Promise.all([
     supabase
       .from('test_cases')
       .select('*')
       .eq('project_id', projectId)
-      .eq('is_active', true)
+      // .eq('is_active', true)  // TEMPORARILY REMOVED TO DEBUG
       .order('case_id'),
     supabase
       .from('modules')
@@ -25,6 +40,17 @@ async function getTestCases() {
       .eq('project_id', projectId)
       .order('name')
   ])
+
+  console.log('📊 [DEBUG] Filtered test cases:', {
+    count: testCases.data?.length || 0,
+    error: testCases.error,
+    sample: testCases.data?.slice(0, 2)
+  })
+
+  console.log('📁 [DEBUG] Modules:', {
+    count: modules.data?.length || 0,
+    error: modules.error
+  })
 
   const moduleMap = new Map((modules.data || []).map(m => [m.id, m.name]))
 
@@ -56,16 +82,10 @@ export default async function TestCasesPage() {
         <div className="flex items-center justify-between animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100 ease-out">
           <div className="space-y-2">
             <h1 className="text-3xl font-semibold tracking-tight text-slate-900">测试用例</h1>
-            <p className="text-slate-500">管理所有测试用例</p>
+            <p className="text-slate-500">高效管理所有测试用例</p>
           </div>
           <div className="flex gap-3">
             <TestExecutionDialog modules={modules} />
-            <Link href="/test-cases/new">
-              <Button className="rounded-lg shadow-sm hover:shadow-md transition-all duration-200">
-                <Plus className="mr-2 h-4 w-4" />
-                新建用例
-              </Button>
-            </Link>
           </div>
         </div>
 
@@ -106,17 +126,40 @@ export default async function TestCasesPage() {
               <div className="text-center space-y-0.5">
                 <p className="text-4xl font-black text-slate-900 tracking-tight">{testCases.filter(tc => tc.is_active).length}</p>
                 <p className="text-sm font-medium text-slate-500">活跃用例</p>
+                <p className="text-xs text-slate-400">{testCases.filter(tc => !tc.is_active).length} 个非活跃</p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* 传递数据给客户端组件 */}
-        <TestCaseList
-          groupedCases={groupedCases}
-          modules={modules}
-          initialTestCases={testCases}
-        />
+        {/* Workbench */}
+        {testCases.length === 0 ? (
+          <div className="bg-white rounded-xl shadow-sm border border-slate-50 p-12 text-center">
+            <p className="text-slate-500 mb-2">未找到测试用例</p>
+            <p className="text-sm text-slate-400 mb-4">
+              请检查：1) PROJECT_ID 环境变量是否正确 2) 数据库中是否有测试用例 3) 测试用例的 is_active 字段是否为 true
+            </p>
+            <div className="space-y-2">
+              <a
+                href="/api/debug/test-cases"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block text-sm text-blue-600 hover:text-blue-700 underline"
+              >
+                🔍 点击查看调试信息（在新标签页打开）
+              </a>
+              <p className="text-xs text-slate-400 mt-2">
+                或查看服务器控制台日志
+              </p>
+            </div>
+          </div>
+        ) : (
+          <TestCasePageClient
+            groupedCases={groupedCases}
+            modules={modules}
+            initialTestCases={testCases}
+          />
+        )}
       </div>
     </div>
   )

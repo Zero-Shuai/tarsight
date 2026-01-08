@@ -45,17 +45,17 @@ export function CollapsibleModuleGroup({
         {/* Status Badges */}
         <div className="flex items-center gap-2">
           {passedCount > 0 && (
-            <Badge className="bg-emerald-50 text-emerald-600 border-emerald-100 text-xs">
+            <Badge className="bg-[#DCFCE7] text-[#10B981] border-[#10B981]/20 text-xs">
               通过 {passedCount}
             </Badge>
           )}
           {failedCount > 0 && (
-            <Badge className="bg-rose-50 text-rose-600 border-rose-100 text-xs">
+            <Badge className="bg-[#FEE2E2] text-[#EF4444] border-[#EF4444]/20 text-xs">
               失败 {failedCount}
             </Badge>
           )}
           {skippedCount > 0 && (
-            <Badge className="bg-amber-50 text-amber-600 border-amber-100 text-xs">
+            <Badge className="bg-[#FEF3C7] text-[#F59E0B] border-[#F59E0B]/20 text-xs">
               跳过 {skippedCount}
             </Badge>
           )}

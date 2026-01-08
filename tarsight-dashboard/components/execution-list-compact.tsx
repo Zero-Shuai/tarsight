@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { CheckCircle2, XCircle, Clock, PlayCircle, Copy, X, Eye } from 'lucide-react'
+import { CheckCircle2, XCircle, Clock, PlayCircle, Copy, X } from 'lucide-react'
 import type { TestExecution } from '@/lib/types/database'
 
 interface ExecutionListCompactProps {
@@ -69,14 +69,14 @@ export function ExecutionListCompact({ executions }: ExecutionListCompactProps) 
         {/* Header - Fixed-width grid */}
         <div className="px-6 py-3 border-b border-slate-100">
           <div className="grid text-xs font-semibold text-slate-500 uppercase tracking-wider items-center"
-               style={{ gridTemplateColumns: '48px 1fr 100px 100px 100px 120px 80px' }}>
+               style={{ gridTemplateColumns: '4px 1.5fr 80px 80px 80px 80px 100px' }}>
             <div></div>
             <div>执行信息</div>
             <div className="text-center">总用例</div>
             <div className="text-center">通过</div>
             <div className="text-center">失败</div>
+            <div className="text-center">跳过</div>
             <div className="text-center">通过率</div>
-            <div></div>
           </div>
         </div>
 
@@ -85,9 +85,12 @@ export function ExecutionListCompact({ executions }: ExecutionListCompactProps) 
           {executions.map((execution) => {
             // 通过率 = 通过数 / (总数 - 跳过数) * 100
             // 只计算实际执行的用例（排除跳过的）
-            const executedTests = execution.total_tests - (execution.skipped_tests || 0)
+            const passedTests = execution.passed_tests || 0
+            const failedTests = execution.failed_tests || 0
+            const skippedTests = execution.skipped_tests || 0
+            const executedTests = execution.total_tests - skippedTests
             const passRate = executedTests > 0
-              ? (execution.passed_tests / executedTests) * 100
+              ? (passedTests / executedTests) * 100
               : 0
             const statusInfo = getStatusInfo(execution.status)
             const StatusIcon = statusInfo.icon
@@ -99,11 +102,11 @@ export function ExecutionListCompact({ executions }: ExecutionListCompactProps) 
                 className="group relative flex items-center px-6 py-3 hover:bg-[#F8FAFC] transition-colors duration-150 cursor-pointer"
               >
                 {/* Status Indicator Bar - Match icon color exactly */}
-                <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${statusInfo.barColor}`} />
+                <div className={`absolute left-0 top-0 bottom-0 w-[4px] ${statusInfo.barColor}`} />
 
                 {/* Content Grid - Fixed-width columns matching header */}
                 <div className="grid items-center flex-1"
-                     style={{ gridTemplateColumns: '48px 1fr 100px 100px 100px 120px 80px' }}>
+                     style={{ gridTemplateColumns: '4px 1.5fr 80px 80px 80px 80px 100px' }}>
                   {/* Status Icon */}
                   <div className="flex justify-center">
                     <StatusIcon className={`h-4 w-4 flex-shrink-0 ${statusInfo.iconColor}`} />
@@ -126,12 +129,17 @@ export function ExecutionListCompact({ executions }: ExecutionListCompactProps) 
 
                   {/* Pass Count - Centered */}
                   <div className="text-center">
-                    <p className="text-lg font-bold text-emerald-600">{execution.passed_tests}</p>
+                    <p className="text-lg font-bold text-[#10B981]">{passedTests}</p>
                   </div>
 
                   {/* Fail Count - Centered */}
                   <div className="text-center">
-                    <p className="text-lg font-bold text-rose-600">{execution.failed_tests}</p>
+                    <p className="text-lg font-bold text-[#EF4444]">{failedTests}</p>
+                  </div>
+
+                  {/* Skipped Count - Centered */}
+                  <div className="text-center">
+                    <p className="text-lg font-bold text-[#F59E0B]">{skippedTests}</p>
                   </div>
 
                   {/* Success Rate Badge - High contrast pill shape */}
@@ -146,21 +154,6 @@ export function ExecutionListCompact({ executions }: ExecutionListCompactProps) 
                     >
                       {passRate.toFixed(1)}%
                     </Badge>
-                  </div>
-
-                  {/* Action Button - Icon only */}
-                  <div className="flex justify-center">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-blue-50 hover:text-blue-600 rounded-lg h-8 w-8 p-0"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setSelectedExecution(execution)
-                      }}
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
                   </div>
                 </div>
               </div>
@@ -211,9 +204,12 @@ function ExecutionDetailsDrawer({
 }) {
   // 通过率 = 通过数 / (总数 - 跳过数) * 100
   // 只计算实际执行的用例（排除跳过的）
-  const executedTests = execution.total_tests - (execution.skipped_tests || 0)
+  const passedTests = execution.passed_tests || 0
+  const failedTests = execution.failed_tests || 0
+  const skippedTests = execution.skipped_tests || 0
+  const executedTests = execution.total_tests - skippedTests
   const passRate = executedTests > 0
-    ? (execution.passed_tests / executedTests) * 100
+    ? (passedTests / executedTests) * 100
     : 0
   const statusInfo = getStatusInfo(execution.status)
 
@@ -261,15 +257,15 @@ function ExecutionDetailsDrawer({
               <p className="text-xs font-medium text-slate-500 mt-1">总用例</p>
             </div>
             <div className="text-center py-3">
-              <p className="text-3xl font-bold text-emerald-600">{execution.passed_tests}</p>
+              <p className="text-3xl font-bold text-[#10B981]">{passedTests}</p>
               <p className="text-xs font-medium text-slate-500 mt-1">通过</p>
             </div>
             <div className="text-center py-3">
-              <p className="text-3xl font-bold text-rose-600">{execution.failed_tests}</p>
+              <p className="text-3xl font-bold text-[#EF4444]">{failedTests}</p>
               <p className="text-xs font-medium text-slate-500 mt-1">失败</p>
             </div>
             <div className="text-center py-3">
-              <p className="text-3xl font-bold text-amber-600">{execution.skipped_tests}</p>
+              <p className="text-3xl font-bold text-[#F59E0B]">{skippedTests}</p>
               <p className="text-xs font-medium text-slate-500 mt-1">跳过</p>
             </div>
           </div>
@@ -285,7 +281,7 @@ function ExecutionDetailsDrawer({
             </div>
           )}
 
-          {/* Success Rate Progress - Dynamic colors: <50% red, 50-99% orange, 100% green */}
+          {/* Success Rate Progress - Dynamic colors: <50% red, 50-99% amber, 100% green */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-slate-700">通过率</span>
@@ -295,10 +291,10 @@ function ExecutionDetailsDrawer({
               <div
                 className={`h-2 rounded-full transition-all duration-500 ${
                   passRate === 100
-                    ? 'bg-emerald-500'
+                    ? 'bg-[#10B981]'
                     : passRate >= 50
-                    ? 'bg-amber-500'
-                    : 'bg-rose-500'
+                    ? 'bg-[#F59E0B]'
+                    : 'bg-[#EF4444]'
                 }`}
                 style={{ width: `${passRate}%` }}
               />

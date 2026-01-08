@@ -104,12 +104,12 @@ export interface TestCase {
   description: string
   method: string
   url: string
-  request_body: Record<string, any>
+  request_body?: Record<string, any>
   expected_status: number
-  headers: Record<string, string>
-  variables: Record<string, any>
-  tags: string[]
-  level: string
+  headers?: Record<string, string>
+  variables?: Record<string, any>
+  tags?: string[]
+  level?: string  // Made optional - doesn't exist in database yet
   is_active: boolean
   created_at: string
 }

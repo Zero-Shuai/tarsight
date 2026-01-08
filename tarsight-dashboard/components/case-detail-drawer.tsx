@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { X, CheckCircle2, XCircle, Circle, Copy, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { JsonViewer } from './json-viewer'
 import type { TestCaseResult } from '@/lib/types/database'
 
 interface CaseDetailDrawerProps {
@@ -11,69 +12,6 @@ interface CaseDetailDrawerProps {
   allCases: TestCaseResult[]
   onClose: () => void
   onNavigate: (direction: 'up' | 'down') => void
-}
-
-// Simple syntax highlighting for JSON with better contrast
-function syntaxHighlight(json: string) {
-  if (!json) return null
-
-  // Check if it's an empty object or array
-  const trimmed = json.trim()
-  if (trimmed === '{}' || trimmed === '[]') {
-    return `<span class="text-slate-400 italic">${trimmed}</span>`
-  }
-
-  try {
-    const obj = JSON.parse(json)
-    const jsonString = JSON.stringify(obj, null, 2)
-
-    return jsonString
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?)/g, (match) => {
-        // Use high contrast colors
-        let cls = 'text-[#8B5CF6]' // purple for keys (better contrast)
-        if (match.endsWith(':')) {
-          cls = 'text-[#3B82F6]' // blue for keys with colon
-        }
-        return `<span class="${cls}">${match}</span>`
-      })
-      .replace(/\b(true|false|null)\b/g, '<span class="text-amber-600">$1</span>')
-      .replace(/\b(-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)\b/g, '<span class="text-emerald-600">$1</span>')
-  } catch (error) {
-    // Return escaped HTML string (not JSX) for dangerouslySetInnerHTML
-    console.error('JSON parsing error:', error, 'Input:', json)
-    const escaped = json
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-    return `<span class="text-slate-500">${escaped}</span>`
-  }
-}
-
-// Helper to safely stringify data for syntax highlighting
-function safeStringify(data: any): string | null {
-  if (!data) return null
-
-  // If already a string, check if it's valid JSON
-  if (typeof data === 'string') {
-    try {
-      JSON.parse(data)
-      return data // It's valid JSON string, use as-is
-    } catch {
-      // Not a JSON string, escape and return as plain text
-      return data
-    }
-  }
-
-  // If an object, stringify it
-  try {
-    return JSON.stringify(data, null, 2)
-  } catch (error) {
-    console.error('Stringification error:', error, 'Data:', data)
-    return String(data)
-  }
 }
 
 export function CaseDetailDrawer({ caseResult, allCases, onClose, onNavigate }: CaseDetailDrawerProps) {
@@ -133,11 +71,11 @@ export function CaseDetailDrawer({ caseResult, allCases, onClose, onNavigate }: 
 
   const statusIcon =
     caseResult.status === 'passed' ? (
-      <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+      <CheckCircle2 className="h-4 w-4 text-[#10B981]" strokeWidth={2.5} />
     ) : caseResult.status === 'failed' ? (
-      <XCircle className="h-5 w-5 text-rose-600" />
+      <XCircle className="h-4 w-4 text-[#EF4444]" strokeWidth={2.5} />
     ) : (
-      <Circle className="h-5 w-5 text-amber-600" />
+      <Circle className="h-4 w-4 text-[#F59E0B]" strokeWidth={2.5} />
     )
 
   const copyToClipboard = (text: string) => {
@@ -206,28 +144,47 @@ export function CaseDetailDrawer({ caseResult, allCases, onClose, onNavigate }: 
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
-          {/* Quick Info */}
-          <div className="grid grid-cols-4 gap-4">
-            <div className="text-center py-3">
-              <p className="text-2xl font-bold text-slate-900">{caseResult.response_time || 0}ms</p>
-              <p className="text-xs font-medium text-slate-500 mt-1">响应时间</p>
+          {/* Quick Info - Header Card */}
+          <div className="bg-slate-50 rounded-lg p-4 border border-slate-100">
+            <div className="grid grid-cols-4 gap-4">
+              {/* Method Badge */}
+              <div className="text-center py-2">
+                <Badge variant="outline" className="font-semibold text-sm px-3 py-1 bg-white">
+                  {caseResult.method || 'N/A'}
+                </Badge>
+                <p className="text-xs text-slate-500 mt-2">请求方法</p>
+              </div>
+
+              {/* Status Code */}
+              <div className="text-center py-2">
+                <p className="text-xl font-bold text-slate-900">{caseResult.response_code || 'N/A'}</p>
+                <p className="text-xs text-slate-500 mt-2">状态码</p>
+              </div>
+
+              {/* Response Time */}
+              <div className="text-center py-2">
+                <p className="text-xl font-bold text-slate-900">{caseResult.response_time || 0}ms</p>
+                <p className="text-xs text-slate-500 mt-2">响应时间</p>
+              </div>
+
+              {/* Status Badge */}
+              <div className="text-center py-2">
+                <Badge className={
+                  caseResult.status === 'passed' ? 'bg-[#DCFCE7] text-[#10B981] border-[#10B981]/20' :
+                  caseResult.status === 'failed' ? 'bg-[#FEE2E2] text-[#EF4444] border-[#EF4444]/20' :
+                  'bg-[#FEF3C7] text-[#F59E0B] border-[#F59E0B]/20'
+                }>
+                  {caseResult.status === 'passed' ? '通过' : caseResult.status === 'failed' ? '失败' : '跳过'}
+                </Badge>
+                <p className="text-xs text-slate-500 mt-2">执行状态</p>
+              </div>
             </div>
-            <div className="text-center py-3">
-              <Badge className={
-                caseResult.status === 'passed' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                caseResult.status === 'failed' ? 'bg-rose-50 text-rose-600 border-rose-100' :
-                'bg-amber-50 text-amber-600 border-amber-100'
-              }>
-                {caseResult.status === 'passed' ? '通过' : caseResult.status === 'failed' ? '失败' : '跳过'}
-              </Badge>
-            </div>
-            <div className="text-center py-3">
-              <p className="text-sm font-semibold text-slate-900">{caseResult.module_name}</p>
-              <p className="text-xs font-medium text-slate-500 mt-1">模块</p>
-            </div>
-            <div className="text-center py-3">
-              <p className="text-sm font-semibold text-slate-900">{caseResult.method}</p>
-              <p className="text-xs font-medium text-slate-500 mt-1">方法</p>
+
+            {/* Module Name */}
+            <div className="mt-3 pt-3 border-t border-slate-200 text-center">
+              <p className="text-xs text-slate-500">
+                模块: <span className="font-semibold text-slate-700">{caseResult.module_name}</span>
+              </p>
             </div>
           </div>
 
@@ -298,12 +255,7 @@ export function CaseDetailDrawer({ caseResult, allCases, onClose, onNavigate }: 
                       </Button>
                     </div>
                     <div className="bg-slate-50 rounded-lg p-4 overflow-x-auto">
-                      <pre
-                        className="text-xs font-mono"
-                        dangerouslySetInnerHTML={{
-                          __html: syntaxHighlight(safeStringify(caseResult.request_headers) || '') || ''
-                        }}
-                      />
+                      <JsonViewer data={caseResult.request_headers} />
                     </div>
                   </div>
                 )}
@@ -323,12 +275,7 @@ export function CaseDetailDrawer({ caseResult, allCases, onClose, onNavigate }: 
                       </Button>
                     </div>
                     <div className="bg-slate-50 rounded-lg p-4 overflow-x-auto">
-                      <pre
-                        className="text-xs font-mono"
-                        dangerouslySetInnerHTML={{
-                          __html: syntaxHighlight(safeStringify(caseResult.request_body) || '') || ''
-                        }}
-                      />
+                      <JsonViewer data={caseResult.request_body} />
                     </div>
                   </div>
                 )}
@@ -353,12 +300,7 @@ export function CaseDetailDrawer({ caseResult, allCases, onClose, onNavigate }: 
                       </Button>
                     </div>
                     <div className="bg-slate-50 rounded-lg p-4 overflow-x-auto">
-                      <pre
-                        className="text-xs font-mono"
-                        dangerouslySetInnerHTML={{
-                          __html: syntaxHighlight(safeStringify(caseResult.response_headers) || '') || ''
-                        }}
-                      />
+                      <JsonViewer data={caseResult.response_headers} />
                     </div>
                   </div>
                 )}
@@ -378,12 +320,7 @@ export function CaseDetailDrawer({ caseResult, allCases, onClose, onNavigate }: 
                       </Button>
                     </div>
                     <div className="bg-slate-50 rounded-lg p-4 overflow-x-auto max-h-96">
-                      <pre
-                        className="text-xs font-mono overflow-auto"
-                        dangerouslySetInnerHTML={{
-                          __html: syntaxHighlight(safeStringify(caseResult.response_body) || '') || ''
-                        }}
-                      />
+                      <JsonViewer data={caseResult.response_body} />
                     </div>
                   </div>
                 )}

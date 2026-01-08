@@ -12,25 +12,25 @@ interface CompactCaseRowProps {
 }
 
 function getResponseTimeColor(responseTime: number): string {
-  if (responseTime < 200) return 'text-emerald-600'
-  if (responseTime < 800) return 'text-amber-600'
-  return 'text-rose-600'
+  if (responseTime < 200) return 'text-[#10B981]'
+  if (responseTime < 800) return 'text-[#F59E0B]'
+  return 'text-[#EF4444]'
 }
 
 function getResponseTimeBg(responseTime: number): string {
-  if (responseTime < 200) return 'bg-emerald-50'
-  if (responseTime < 800) return 'bg-amber-50'
-  return 'bg-rose-50'
+  if (responseTime < 200) return 'bg-[#DCFCE7]'
+  if (responseTime < 800) return 'bg-[#FEF3C7]'
+  return 'bg-[#FEE2E2]'
 }
 
 export function CompactCaseRow({ caseResult, isSelected, onClick }: CompactCaseRowProps) {
   const statusIcon =
     caseResult.status === 'passed' ? (
-      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+      <CheckCircle2 className="h-4 w-4 text-[#10B981]" strokeWidth={2.5} />
     ) : caseResult.status === 'failed' ? (
-      <XCircle className="h-4 w-4 text-rose-600" />
+      <XCircle className="h-4 w-4 text-[#EF4444]" strokeWidth={2.5} />
     ) : (
-      <Circle className="h-4 w-4 text-amber-600" />
+      <Circle className="h-4 w-4 text-[#F59E0B]" strokeWidth={2.5} />
     )
 
   const responseTime = caseResult.response_time || 0

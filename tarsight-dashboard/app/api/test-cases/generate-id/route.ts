@@ -41,7 +41,9 @@ export async function GET(request: Request) {
       )
     }
 
-    const projectCode = (module.projects as any).project_code
+    // Supabase JOIN 返回数组，需要取第一个元素
+    const projects = module.projects as any
+    const projectCode = Array.isArray(projects) && projects.length > 0 ? projects[0].project_code : null
     const moduleCode = module.module_code
 
     if (!projectCode || !moduleCode) {

@@ -45,11 +45,19 @@ export type TestCase = {
   request_body?: Record<string, any>
   variables?: Record<string, any>
   tags?: string[]
-  level: string
+  assertions?: Assertion[]  // Re-added - will be added via migration 006
+  level?: string  // Made optional - will be added via migration 006
   is_active: boolean
-  user_id?: string
+  created_by?: string  // Changed from user_id to match database
   created_at: string
   updated_at?: string
+}
+
+// Assertion Rule Types
+export type Assertion = {
+  type: 'contains' | 'equals' | 'json_path' | 'regex'
+  target: 'body' | 'header'
+  value: string
 }
 
 // ============================================
@@ -69,6 +77,7 @@ export type TestExecution = {
   started_at: string
   completed_at?: string
   created_at: string
+  error_message?: string
 }
 
 // ============================================
@@ -147,9 +156,10 @@ export type TestCaseResult = {
     request_body?: Record<string, any>
     variables?: Record<string, any>
     tags?: string[]
-    level: string
+    assertions?: Assertion[]  // Re-added - will be added via migration 006
+    level?: string  // Will be added via migration 006
     is_active: boolean
-    user_id?: string
+    created_by?: string
     created_at: string
     updated_at?: string
 

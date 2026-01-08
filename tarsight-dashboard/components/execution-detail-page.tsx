@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect, useCallback } from 'react'
 import { ArrowLeft, Loader2 } from 'lucide-react'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { FilterHeader } from './execution-filter-header'
 import { CollapsibleModuleGroup } from './collapsible-module-group'
@@ -25,7 +26,7 @@ export function ExecutionDetailPage({ execution, testResults: initialResults }: 
 
   // Derived states
   const modules = useMemo(() => {
-    const uniqueModules = [...new Set(initialResults.map((r) => r.module_name))]
+    const uniqueModules = [...new Set(initialResults.map((r) => r.module_name).filter((name): name is string => !!name))]
     return uniqueModules.sort()
   }, [initialResults])
 
@@ -119,15 +120,16 @@ export function ExecutionDetailPage({ execution, testResults: initialResults }: 
       {/* Header */}
       <div className="sticky top-0 z-20 bg-white border-b border-slate-200 shadow-sm">
         <div className="px-6 py-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            href="/executions"
-            className="mb-2 rounded-lg hover:bg-slate-100"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            返回执行历史
-          </Button>
+          <Link href="/executions">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="mb-2 rounded-lg hover:bg-slate-100"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              返回执行历史
+            </Button>
+          </Link>
           <h1 className="text-2xl font-semibold text-slate-900">{execution.execution_name}</h1>
           <p className="text-sm text-slate-500 mt-1">
             执行时间: {new Date(execution.started_at).toLocaleString('zh-CN')}

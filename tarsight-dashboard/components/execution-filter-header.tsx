@@ -96,10 +96,10 @@ export function FilterHeader({
               variant={statusFilter === 'passed' ? 'default' : 'outline'}
               size="sm"
               onClick={() => onStatusFilterChange('passed')}
-              className={`rounded-lg ${statusFilter === 'passed' ? 'bg-emerald-600 hover:bg-emerald-700' : ''}`}
+              className={`rounded-lg ${statusFilter === 'passed' ? 'bg-[#10B981] hover:bg-[#059669]' : ''}`}
             >
               通过
-              <Badge variant="secondary" className="ml-2 bg-emerald-100 text-emerald-700">
+              <Badge variant="secondary" className="ml-2 bg-[#DCFCE7] text-[#10B981]">
                 {passedCount}
               </Badge>
             </Button>
@@ -107,10 +107,10 @@ export function FilterHeader({
               variant={statusFilter === 'failed' ? 'default' : 'outline'}
               size="sm"
               onClick={() => onStatusFilterChange('failed')}
-              className={`rounded-lg ${statusFilter === 'failed' ? 'bg-rose-600 hover:bg-rose-700' : ''}`}
+              className={`rounded-lg ${statusFilter === 'failed' ? 'bg-[#EF4444] hover:bg-[#DC2626]' : ''}`}
             >
               失败
-              <Badge variant="secondary" className="ml-2 bg-rose-100 text-rose-700">
+              <Badge variant="secondary" className="ml-2 bg-[#FEE2E2] text-[#EF4444]">
                 {failedCount}
               </Badge>
             </Button>
@@ -118,10 +118,10 @@ export function FilterHeader({
               variant={statusFilter === 'skipped' ? 'default' : 'outline'}
               size="sm"
               onClick={() => onStatusFilterChange('skipped')}
-              className={`rounded-lg ${statusFilter === 'skipped' ? 'bg-amber-600 hover:bg-amber-700' : ''}`}
+              className={`rounded-lg ${statusFilter === 'skipped' ? 'bg-[#F59E0B] hover:bg-[#D97706]' : ''}`}
             >
               跳过
-              <Badge variant="secondary" className="ml-2 bg-amber-100 text-amber-700">
+              <Badge variant="secondary" className="ml-2 bg-[#FEF3C7] text-[#F59E0B]">
                 {skippedCount}
               </Badge>
             </Button>
