@@ -31,7 +31,8 @@ export function TestCaseFormDrawer({ testCase, modules, onClose, onSuccess }: Te
     }
   }
 
-  const [formData, setFormData] = useState({
+  // Initialize form data - use a function to compute initial state
+  const getInitialFormData = () => ({
     case_id: testCase?.case_id || '',
     test_name: testCase?.test_name || '',
     url: testCase?.url || '',
@@ -48,7 +49,24 @@ export function TestCaseFormDrawer({ testCase, modules, onClose, onSuccess }: Te
     is_active: testCase?.is_active !== undefined ? testCase.is_active : true
   })
 
+  const [formData, setFormData] = useState(getInitialFormData)
+
   const [newTag, setNewTag] = useState('')
+
+  // Log when testCase changes (for debugging)
+  useEffect(() => {
+    console.log('🔵 [Form Drawer] testCase prop changed:', {
+      hasTestCase: !!testCase,
+      testCaseId: testCase?.id,
+      caseId: testCase?.case_id,
+      testName: testCase?.test_name,
+      level: testCase?.level
+    })
+    // Reset form data when testCase changes
+    setFormData(getInitialFormData())
+    // Also reset loading state
+    setLoading(false)
+  }, [testCase?.id])
 
   // Generate preview case ID when module changes (for new cases only)
   useEffect(() => {
@@ -86,7 +104,7 @@ export function TestCaseFormDrawer({ testCase, modules, onClose, onSuccess }: Te
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('🔵 [Form Submit] Starting submit process...')
+    console.log('🔵 [Form Submit] ========== Starting submit process ==========')
 
     // Validate required fields
     if (!formData.test_name) {
@@ -111,12 +129,18 @@ export function TestCaseFormDrawer({ testCase, modules, onClose, onSuccess }: Te
     })
 
     try {
-      console.log('🔵 [Form Submit] Getting user...')
+      // 检查用户认证状态 (仅用于日志，不阻止操作)
+      console.log('🔵 [Form Submit] Checking user auth status...')
       const { data: { user }, error: userError } = await supabaseClient.auth.getUser()
-      console.log('🔵 [Form Submit] User result:', { user: user?.id, userError })
-      if (userError || !user) {
-        throw new Error('无法获取用户信息，请重新登录')
-      }
+      console.log('🔵 [Form Submit] Auth status:', {
+        hasUser: !!user,
+        userId: user?.id,
+        userEmail: user?.email,
+        userError: userError?.message
+      })
+
+      // 注意：即使用户信息获取失败，RLS 策略也会在数据库层面处理权限
+      // 所以我们继续执行，让数据库返回错误
 
       // Build payload with all fields
       const payload: Record<string, any> = {
@@ -139,21 +163,22 @@ export function TestCaseFormDrawer({ testCase, modules, onClose, onSuccess }: Te
 
       console.log('🔵 [Form Submit] Payload prepared:', payload)
 
-      let error
+      let error, result
       if (testCase?.id) {
         // Update existing case
         console.log('🔵 [Form Submit] Updating existing case, id:', testCase.id)
-        const result = await supabaseClient
+        const updateResult = await supabaseClient
           .from('test_cases')
           .update(payload)
           .eq('id', testCase.id)
           .select()
-        console.log('🔵 [Form Submit] Update result:', result)
-        error = result.error
+        console.log('🔵 [Form Submit] Update result:', updateResult)
+        error = updateResult.error
+        result = updateResult.data
       } else {
         // Create new case
         console.log('🔵 [Form Submit] Creating new case')
-        const result = await supabaseClient
+        const insertResult = await supabaseClient
           .from('test_cases')
           .insert({
             ...payload,
@@ -161,19 +186,33 @@ export function TestCaseFormDrawer({ testCase, modules, onClose, onSuccess }: Te
             // created_by will be set by database trigger/RLS policy
           })
           .select()
-        console.log('🔵 [Form Submit] Insert result:', result)
-        error = result.error
+        console.log('🔵 [Form Submit] Insert result:', insertResult)
+        error = insertResult.error
+        result = insertResult.data
       }
 
-      if (error) throw error
-      console.log('✅ [Form Submit] Success! Calling onSuccess...')
+      if (error) {
+        console.error('❌ [Form Submit] Database error:', error)
+        console.error('❌ [Form Submit] Error details:', {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint
+        })
+        throw error
+      }
+
+      console.log('✅ [Form Submit] Success! Result:', result)
+      console.log('🔵 [Form Submit] Calling onSuccess callback...')
       onSuccess()
     } catch (error: any) {
-      console.error('❌ [Form Submit] Error:', error)
+      console.error('❌ [Form Submit] Error caught:', error)
+      console.error('❌ [Form Submit] Error stack:', error.stack)
       alert(`${testCase?.id ? '更新' : '创建'}失败: ${error.message}`)
     } finally {
       console.log('🔵 [Form Submit] Setting loading to false')
       setLoading(false)
+      console.log('🔵 [Form Submit] ========== Submit process ended ==========')
     }
   }
 
@@ -411,6 +450,9 @@ export function TestCaseFormDrawer({ testCase, modules, onClose, onSuccess }: Te
               <Button
                 type="submit"
                 disabled={loading}
+                onClick={(e) => {
+                  console.log('🔵 [Button Click] Submit button clicked!', { loading, testCaseId: testCase?.id })
+                }}
                 className="bg-[#3B82F6] hover:bg-[#2563EB] text-white rounded-lg shadow-sm transition-all duration-200"
               >
                 {loading ? (
