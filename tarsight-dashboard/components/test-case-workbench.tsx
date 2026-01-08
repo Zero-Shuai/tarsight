@@ -86,7 +86,7 @@ export function TestCaseWorkbench({
       }, {} as Record<string, TestCase[]>)
   }, [testCases, searchQuery, modules])
 
-  const toggleModule = (moduleName: string) => {
+  const toggleModule = useCallback((moduleName: string) => {
     setExpandedModules(prev => {
       const next = new Set(prev)
       if (next.has(moduleName)) {
@@ -96,17 +96,17 @@ export function TestCaseWorkbench({
       }
       return next
     })
-  }
+  }, [])
 
-  const toggleAll = () => {
+  const toggleAll = useCallback(() => {
     if (expandedModules.size === Object.keys(filteredGroupedCases).length) {
       setExpandedModules(new Set())
     } else {
       setExpandedModules(new Set(Object.keys(filteredGroupedCases)))
     }
-  }
+  }, [expandedModules.size, filteredGroupedCases])
 
-  const handleDelete = async (testCase: TestCase) => {
+  const handleDelete = useCallback(async (testCase: TestCase) => {
     if (!confirm(`确定要删除测试用例 "${testCase.test_name}" 吗？`)) return
 
     try {
@@ -123,7 +123,7 @@ export function TestCaseWorkbench({
     } catch (error: any) {
       alert('删除失败: ' + error.message)
     }
-  }
+  }, [onUpdate])
 
   return (
     <>

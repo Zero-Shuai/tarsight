@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import {
@@ -39,7 +39,7 @@ export function TestExecutionForm({ selectedTestCaseIds = [], allModules = [] }:
   const [isExecuting, setIsExecuting] = useState(false)
 
   // 获取执行预览
-  const handlePreview = async () => {
+  const handlePreview = useCallback(async () => {
     setIsLoading(true)
     try {
       const response = await fetch('/api/test/preview', {
@@ -65,10 +65,10 @@ export function TestExecutionForm({ selectedTestCaseIds = [], allModules = [] }:
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [executionType, selectedModules, selectedLevels, selectedTestCaseIds])
 
   // 执行测试
-  const handleExecute = async () => {
+  const handleExecute = useCallback(async () => {
     if (!preview || preview.total_cases === 0) {
       alert('请先获取执行预览')
       return
@@ -105,10 +105,10 @@ export function TestExecutionForm({ selectedTestCaseIds = [], allModules = [] }:
     } finally {
       setIsExecuting(false)
     }
-  }
+  }, [preview, executionType, selectedModules, selectedLevels, selectedTestCaseIds, router])
 
   // 切换模块选择
-  const toggleModule = (moduleId: string) => {
+  const toggleModule = useCallback((moduleId: string) => {
     setSelectedModules(prev =>
       prev.includes(moduleId)
         ? prev.filter(id => id !== moduleId)
@@ -116,10 +116,10 @@ export function TestExecutionForm({ selectedTestCaseIds = [], allModules = [] }:
     )
     // 清除预览
     setPreview(null)
-  }
+  }, [])
 
   // 切换等级选择
-  const toggleLevel = (level: string) => {
+  const toggleLevel = useCallback((level: string) => {
     setSelectedLevels(prev =>
       prev.includes(level)
         ? prev.filter(l => l !== level)
@@ -127,7 +127,7 @@ export function TestExecutionForm({ selectedTestCaseIds = [], allModules = [] }:
     )
     // 清除预览
     setPreview(null)
-  }
+  }, [])
 
   const isPreviewDisabled =
     (executionType === 'modules' && selectedModules.length === 0) ||

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { X, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -88,21 +88,21 @@ export function TestCaseFormDrawer({ testCase, modules, onClose, onSuccess }: Te
     fetchPreviewId()
   }, [formData.module_id, testCase])
 
-  const addTag = () => {
+  const addTag = useCallback(() => {
     if (newTag.trim() && !formData.tags.includes(newTag.trim())) {
       setFormData({ ...formData, tags: [...formData.tags, newTag.trim()] })
       setNewTag('')
     }
-  }
+  }, [newTag, formData.tags])
 
-  const removeTag = (tagToRemove: string) => {
+  const removeTag = useCallback((tagToRemove: string) => {
     setFormData({
       ...formData,
       tags: formData.tags.filter(tag => tag !== tagToRemove)
     })
-  }
+  }, [formData.tags])
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
     console.log('🔵 [Form Submit] ========== Starting submit process ==========')
 
@@ -214,7 +214,7 @@ export function TestCaseFormDrawer({ testCase, modules, onClose, onSuccess }: Te
       setLoading(false)
       console.log('🔵 [Form Submit] ========== Submit process ended ==========')
     }
-  }
+  }, [formData, previewCaseId, testCase, onSuccess])
 
   return (
     <div className="fixed inset-0 z-50 flex">

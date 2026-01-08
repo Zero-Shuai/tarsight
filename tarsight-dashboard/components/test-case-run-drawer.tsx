@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { X, Loader2, CheckCircle2, XCircle, Circle, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -17,7 +17,7 @@ export function TestCaseRunDrawer({ testCase, onClose }: TestCaseRunDrawerProps)
   const [result, setResult] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const executeTest = async () => {
+  const executeTest = useCallback(async () => {
     setExecuting(true)
     setError(null)
     setResult(null)
@@ -44,11 +44,11 @@ export function TestCaseRunDrawer({ testCase, onClose }: TestCaseRunDrawerProps)
     } finally {
       setExecuting(false)
     }
-  }
+  }, [testCase.id, testCase.case_id])
 
   useEffect(() => {
     executeTest()
-  }, [testCase])
+  }, [executeTest])
 
   return (
     <div className="fixed inset-0 z-50 flex">
