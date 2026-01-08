@@ -1,6 +1,11 @@
 /**
  * 统一的日志系统
  * 支持不同级别的日志输出，便于调试和监控
+ *
+ * 生产环境行为:
+ * - NODE_ENV=production 时只输出 WARN 和 ERROR 级别日志
+ * - 开发环境输出所有级别日志
+ * - 可通过 LOG_LEVEL 环境变量覆盖默认行为
  */
 
 export enum LogLevel {
@@ -9,6 +14,8 @@ export enum LogLevel {
   WARN = 2,
   ERROR = 3
 }
+
+const isProduction = process.env.NODE_ENV === 'production'
 
 export interface LogEntry {
   level: LogLevel
@@ -106,19 +113,28 @@ class Logger {
 
 // 创建全局 logger 实例
 const logLevelFromEnv = (): LogLevel => {
-  const level = process.env.LOG_LEVEL?.toUpperCase()
-  switch (level) {
-    case 'DEBUG':
-      return LogLevel.DEBUG
-    case 'INFO':
-      return LogLevel.INFO
-    case 'WARN':
-      return LogLevel.WARN
-    case 'ERROR':
-      return LogLevel.ERROR
-    default:
-      return LogLevel.INFO
+  // 首先检查显式设置的 LOG_LEVEL
+  const envLevel = process.env.LOG_LEVEL?.toUpperCase()
+  if (envLevel) {
+    switch (envLevel) {
+      case 'DEBUG':
+        return LogLevel.DEBUG
+      case 'INFO':
+        return LogLevel.INFO
+      case 'WARN':
+        return LogLevel.WARN
+      case 'ERROR':
+        return LogLevel.ERROR
+    }
   }
+
+  // 生产环境默认只记录 WARN 和 ERROR
+  if (isProduction) {
+    return LogLevel.WARN
+  }
+
+  // 开发环境默认记录 INFO 及以上
+  return LogLevel.INFO
 }
 
 export const logger = new Logger(logLevelFromEnv(), true)

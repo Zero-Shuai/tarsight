@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, memo } from 'react'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -11,6 +11,7 @@ interface ExecutionListCompactProps {
   executions: TestExecution[]
 }
 
+// Memoized helper functions - defined outside component to avoid recreation
 function formatDate(dateString: string): string {
   const date = new Date(dateString)
   if (isNaN(date.getTime())) return '无效时间'
@@ -26,31 +27,32 @@ function formatDate(dateString: string): string {
   })
 }
 
-function getStatusInfo(status: string) {
-  const info = {
-    running: {
-      text: '运行中',
-      className: 'bg-blue-50 text-blue-600 border-blue-100',
-      icon: PlayCircle,
-      iconColor: 'text-[#3B82F6]', // Blue-500
-      barColor: 'bg-[#3B82F6]'
-    },
-    completed: {
-      text: '已完成',
-      className: 'bg-emerald-50 text-emerald-600 border-emerald-100',
-      icon: CheckCircle2,
-      iconColor: 'text-[#10B981]', // Emerald-500
-      barColor: 'bg-[#10B981]'
-    },
-    failed: {
-      text: '失败',
-      className: 'bg-rose-50 text-rose-600 border-rose-100',
-      icon: XCircle,
-      iconColor: 'text-[#EF4444]', // Red-500
-      barColor: 'bg-[#EF4444]'
-    }
+const statusInfoMap = {
+  running: {
+    text: '运行中',
+    className: 'bg-blue-50 text-blue-600 border-blue-100',
+    icon: PlayCircle,
+    iconColor: 'text-[#3B82F6]',
+    barColor: 'bg-[#3B82F6]'
+  },
+  completed: {
+    text: '已完成',
+    className: 'bg-emerald-50 text-emerald-600 border-emerald-100',
+    icon: CheckCircle2,
+    iconColor: 'text-[#10B981]',
+    barColor: 'bg-[#10B981]'
+  },
+  failed: {
+    text: '失败',
+    className: 'bg-rose-50 text-rose-600 border-rose-100',
+    icon: XCircle,
+    iconColor: 'text-[#EF4444]',
+    barColor: 'bg-[#EF4444]'
   }
-  return info[status as keyof typeof info] || {
+} as const
+
+function getStatusInfo(status: string) {
+  return statusInfoMap[status as keyof typeof statusInfoMap] || {
     text: status,
     className: 'bg-slate-50 text-slate-600 border-slate-100',
     icon: Clock,
@@ -59,7 +61,7 @@ function getStatusInfo(status: string) {
   }
 }
 
-export function ExecutionListCompact({ executions }: ExecutionListCompactProps) {
+export const ExecutionListCompact = memo(function ExecutionListCompact({ executions }: ExecutionListCompactProps) {
   const [selectedExecution, setSelectedExecution] = useState<TestExecution | null>(null)
 
   return (
@@ -192,7 +194,7 @@ export function ExecutionListCompact({ executions }: ExecutionListCompactProps) 
       )}
     </>
   )
-}
+})
 
 // Drawer Component for Execution Details
 function ExecutionDetailsDrawer({

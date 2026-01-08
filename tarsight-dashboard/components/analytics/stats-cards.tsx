@@ -1,5 +1,6 @@
 'use client'
 
+import { memo, useMemo } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { BarChart3, TrendingUp, AlertTriangle, Activity } from 'lucide-react'
 
@@ -29,27 +30,31 @@ interface StatsCardsProps {
   failedCount: number
 }
 
-export function StatsCards({
+export const StatsCards = memo(function StatsCards({
   totalExecutions,
   avgPassRate,
   totalTestCases,
   failedCount
 }: StatsCardsProps) {
-  // Color helpers for pass rate card
-  const getPassRateColor = (rate: number) => {
-    if (rate >= 90) return '#10B981' // Emerald
-    if (rate >= 70) return '#F59E0B' // Amber
-    return '#EF4444' // Red
-  }
+  // Memoized color helpers for pass rate card
+  const { passRateColor, passRateIconBg } = useMemo(() => {
+    const getPassRateColor = (rate: number) => {
+      if (rate >= 90) return '#10B981' // Emerald
+      if (rate >= 70) return '#F59E0B' // Amber
+      return '#EF4444' // Red
+    }
 
-  const getPassRateIconBg = (rate: number) => {
-    if (rate >= 90) return '#ECFDF5' // Emerald 50
-    if (rate >= 70) return '#FEF3C7' // Amber 100
-    return '#FEF2F2' // Red 100
-  }
+    const getPassRateIconBg = (rate: number) => {
+      if (rate >= 90) return '#ECFDF5' // Emerald 50
+      if (rate >= 70) return '#FEF3C7' // Amber 100
+      return '#FEF2F2' // Red 100
+    }
 
-  const passRateColor = getPassRateColor(avgPassRate)
-  const passRateIconBg = getPassRateIconBg(avgPassRate)
+    return {
+      passRateColor: getPassRateColor(avgPassRate),
+      passRateIconBg: getPassRateIconBg(avgPassRate)
+    }
+  }, [avgPassRate])
 
   const cards = [
     {
@@ -211,4 +216,4 @@ export function StatsCards({
       ))}
     </div>
   )
-}
+})

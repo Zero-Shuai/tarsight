@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, memo, useMemo, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -16,10 +16,10 @@ interface TestCaseListProps {
   initialTestCases: TestCase[]
 }
 
-export function TestCaseList({ groupedCases, modules, initialTestCases }: TestCaseListProps) {
+export const TestCaseList = memo(function TestCaseList({ groupedCases, modules, initialTestCases }: TestCaseListProps) {
   const [testCases, setTestCases] = useState(initialTestCases)
 
-  const refreshData = async () => {
+  const refreshData = useCallback(async () => {
     const projectId = process.env.NEXT_PUBLIC_PROJECT_ID
     const { data } = await supabaseClient
       .from('test_cases')
@@ -31,18 +31,20 @@ export function TestCaseList({ groupedCases, modules, initialTestCases }: TestCa
     if (data) {
       setTestCases(data)
     }
-  }
+  }, [])
 
-  // 重新分组
-  const currentGroupedCases = testCases.reduce((acc, tc) => {
-    const module = modules.find(m => m.id === tc.module_id)
-    const moduleName = module?.name || 'Unknown'
-    if (!acc[moduleName]) {
-      acc[moduleName] = []
-    }
-    acc[moduleName].push(tc)
-    return acc
-  }, {} as Record<string, TestCase[]>)
+  // 重新分组 - memoized to avoid recalculation on every render
+  const currentGroupedCases = useMemo(() => {
+    return testCases.reduce((acc, tc) => {
+      const module = modules.find(m => m.id === tc.module_id)
+      const moduleName = module?.name || 'Unknown'
+      if (!acc[moduleName]) {
+        acc[moduleName] = []
+      }
+      acc[moduleName].push(tc)
+      return acc
+    }, {} as Record<string, TestCase[]>)
+  }, [testCases, modules])
 
   return (
     <>
@@ -140,4 +142,4 @@ export function TestCaseList({ groupedCases, modules, initialTestCases }: TestCa
       </div>
     </>
   )
-}
+})
