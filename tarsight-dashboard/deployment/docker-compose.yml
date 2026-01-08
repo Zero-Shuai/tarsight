@@ -10,7 +10,7 @@ services:
     container_name: tarsight-dashboard
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "127.0.0.1:15183:3000"
     environment:
       - NODE_ENV=production
       # 运行时环境变量

@@ -59,7 +59,7 @@ fi
 
 echo "✅ 容器已启动"
 echo ""
-echo "🌐 应用访问地址: http://localhost:3000"
+echo "🌐 应用访问地址: http://localhost:15183"
 echo ""
 echo "📋 常用命令:"
 echo "  查看日志: docker logs -f tarsight-dashboard"
