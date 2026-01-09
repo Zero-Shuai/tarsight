@@ -19,11 +19,8 @@ SET assertions = CASE
             'version', '2.0',
             'stopOnFailure', true,
             'assertions', CASE
-                -- If validation_rules is already in array format
-                WHEN jsonb_typeof(validation_rules) = 'array' THEN
-                    validation_rules
                 -- If validation_rules has the old structure with 'checks'
-                WHEN validation_rules ? 'checks' THEN
+                WHEN validation_rules::jsonb ? 'checks' THEN
                     (SELECT jsonb_agg(
                         jsonb_build_object(
                             'id', gen_random_uuid()::text,
@@ -36,7 +33,7 @@ SET assertions = CASE
                             'expectedValue', check_item->>'value'
                         )
                     )
-                    FROM jsonb_array_elements(validation_rules->'checks') AS check_item)
+                    FROM jsonb_array_elements(validation_rules::jsonb->'checks') AS check_item)
                 -- Fallback: treat as single json_body assertion
                 ELSE
                     jsonb_build_array(
@@ -48,7 +45,7 @@ SET assertions = CASE
                             'target', 'body',
                             'jsonPath', '$.code',
                             'operator', 'equals',
-                            'expectedValue', validation_rules
+                            'expectedValue', validation_rules::text
                         )
                     )
             END

@@ -9,6 +9,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { supabase as supabaseClient } from '@/lib/supabase/client'
 import type { TestCase, Module } from '@/lib/types/database'
+import { AssertionBuilder } from './assertion-builder'
+import type { AssertionsConfig } from '@/lib/types/database'
 
 interface TestCaseFormDrawerProps {
   testCase?: TestCase
@@ -53,6 +55,13 @@ export function TestCaseFormDrawer({ testCase, modules, onClose, onSuccess }: Te
 
   const [newTag, setNewTag] = useState('')
 
+  // Assertions state
+  const [assertionsConfig, setAssertionsConfig] = useState<AssertionsConfig>({
+    version: '2.0',
+    stopOnFailure: true,
+    assertions: []
+  })
+
   // Log when testCase changes (for debugging)
   useEffect(() => {
     console.log('🔵 [Form Drawer] testCase prop changed:', {
@@ -66,7 +75,79 @@ export function TestCaseFormDrawer({ testCase, modules, onClose, onSuccess }: Te
     setFormData(getInitialFormData())
     // Also reset loading state
     setLoading(false)
+
+    // Load assertions config
+    if (testCase) {
+      if (testCase.assertions) {
+        setAssertionsConfig(testCase.assertions)
+      } else if (testCase.validation_rules) {
+        // Migrate old validation_rules to new format
+        const migrated = migrateValidationRulesToAssertions(testCase.validation_rules)
+        setAssertionsConfig(migrated)
+      }
+    } else {
+      // Reset for new test case
+      setAssertionsConfig({
+        version: '2.0',
+        stopOnFailure: true,
+        assertions: []
+      })
+    }
   }, [testCase?.id])
+
+  // Migrate legacy validation_rules to new assertions format
+  const migrateValidationRulesToAssertions = (validationRules: any): AssertionsConfig => {
+    if (!validationRules) {
+      return {
+        version: '2.0',
+        stopOnFailure: true,
+        assertions: []
+      }
+    }
+
+    try {
+      const rules = typeof validationRules === 'string' ? JSON.parse(validationRules) : validationRules
+
+      if (rules.checks && Array.isArray(rules.checks)) {
+        return {
+          version: '2.0',
+          stopOnFailure: true,
+          assertions: rules.checks.map((check: any) => ({
+            id: crypto.randomUUID(),
+            type: 'json_body',
+            enabled: true,
+            critical: true,
+            target: 'body',
+            jsonPath: check.path || '$.code',
+            operator: check.operator || 'equals',
+            expectedValue: check.value
+          }))
+        }
+      }
+
+      return {
+        version: '2.0',
+        stopOnFailure: true,
+        assertions: [{
+          id: crypto.randomUUID(),
+          type: 'json_body',
+          enabled: true,
+          critical: true,
+          target: 'body',
+          jsonPath: '$.code',
+          operator: 'equals',
+          expectedValue: rules
+        }]
+      }
+    } catch (error) {
+      console.error('Failed to migrate validation_rules:', error)
+      return {
+        version: '2.0',
+        stopOnFailure: true,
+        assertions: []
+      }
+    }
+  }
 
   // Generate preview case ID when module changes (for new cases only)
   useEffect(() => {
@@ -155,10 +236,10 @@ export function TestCaseFormDrawer({ testCase, modules, onClose, onSuccess }: Te
         headers: formData.headers,
         request_body: formData.request_body,
         variables: formData.variables,
+        assertions: assertionsConfig, // Add assertions to payload
         level: formData.level,
         is_active: formData.is_active
         // Note: created_by is handled by database trigger/RLS
-        // assertions not included - may not exist in database schema
       }
 
       console.log('🔵 [Form Submit] Payload prepared:', payload)
@@ -342,10 +423,6 @@ export function TestCaseFormDrawer({ testCase, modules, onClose, onSuccess }: Te
             />
           </div>
 
-          {/* Assertion Rules - Hidden Feature (not saved to DB) */}
-          {/* The assertions feature is not yet implemented in the database schema */}
-          {/* This section is commented out to prevent schema mismatch errors */}
-
           {/* Description */}
           <div className="space-y-2">
             <Label htmlFor="description">描述</Label>
@@ -355,6 +432,14 @@ export function TestCaseFormDrawer({ testCase, modules, onClose, onSuccess }: Te
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="用例描述..."
               rows={3}
+            />
+          </div>
+
+          {/* Enhanced Assertions */}
+          <div className="space-y-4">
+            <AssertionBuilder
+              assertionsConfig={assertionsConfig}
+              onChange={setAssertionsConfig}
             />
           </div>
 

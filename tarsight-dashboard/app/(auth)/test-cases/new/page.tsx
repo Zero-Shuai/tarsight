@@ -1,3 +1,23 @@
+/**
+ * @deprecated
+ *
+ * ⚠️ 此页面已废弃，请勿使用！
+ *
+ * 废弃原因: 独立的新增页面用户体验不如抽屉式表单
+ * 废弃日期: 2026-01-09
+ * 替代方案: /test-cases 主页面 + TestCaseFormDrawer 抽屉
+ *
+ * 迁移指南:
+ * 1. 访问 /test-cases 主页面
+ * 2. 点击右上角"新增测试用例"按钮
+ * 3. 在打开的抽屉中填写测试用例信息
+ *
+ * 删除计划: 待确认无外部链接或书签后删除
+ *
+ * 依赖组件:
+ * - components/new-test-case-form.tsx (已废弃)
+ * - components/test-case-form.tsx (部分废弃)
+ */
 import { createClient } from '@/lib/supabase/server'
 import { NewTestCaseForm } from '@/components/new-test-case-form'
 

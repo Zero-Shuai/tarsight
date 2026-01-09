@@ -1,3 +1,25 @@
+/**
+ * TestCaseForm - 测试用例表单组件
+ *
+ * ⚠️ 使用注意事项
+ *
+ * 当前状态: 部分使用中
+ * 主要用途: 弹窗式编辑表单（用于 test-case-actions.tsx）
+ *
+ * 使用场景:
+ * 1. ✅ test-case-actions.tsx - 行内编辑按钮（弹窗式）
+ * 2. ❌ new-test-case-form.tsx - 已废弃（独立页面）
+ *
+ * 如果需要在抽屉中使用表单，请使用:
+ * - TestCaseFormDrawer (components/test-case-form-drawer.tsx)
+ *
+ * 功能特性:
+ * - ✅ 已集成 AssertionBuilder 断言组件
+ * - ✅ 支持旧数据迁移 (validation_rules → assertions)
+ * - ✅ 完整的表单验证和提交逻辑
+ *
+ * @deprecated 仅用于弹窗式编辑，新建请使用 TestCaseFormDrawer
+ */
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
@@ -495,12 +517,41 @@ export function TestCaseForm({ testCase, modules, onSuccess, onCancel }: TestCas
             </p>
           </div>
 
+          {/* 测试：简单的红色文本 */}
+          <div style={{
+            padding: '15px',
+            margin: '15px 0',
+            backgroundColor: '#ff0000',
+            color: '#ffffff',
+            fontSize: '20px',
+            fontWeight: 'bold',
+            textAlign: 'center',
+            borderRadius: '8px'
+          }}>
+            🎉 如果您能看到这个红色背景的区域，说明渲染是正常的！
+          </div>
+
           {/* Enhanced Assertions */}
-          <div>
+          <div style={{
+            padding: '20px',
+            margin: '20px 0',
+            border: '3px dashed red',
+            borderRadius: '8px',
+            backgroundColor: '#fff9c4'
+          }}>
+            <h3 style={{ color: 'red', fontWeight: 'bold', marginBottom: '10px' }}>
+              🔴 调试：断言配置区域
+            </h3>
+            <p style={{ fontSize: '14px', color: '#333', marginBottom: '10px' }}>
+              如果您能看到这个红色框，说明表单本身是正常的
+            </p>
             <AssertionBuilder
               assertionsConfig={assertionsConfig}
               onChange={setAssertionsConfig}
             />
+            <p style={{ fontSize: '12px', color: '#666', marginTop: '10px' }}>
+              断言组件加载状态: {typeof AssertionBuilder !== 'undefined' ? '已加载' : '未定义'}
+            </p>
           </div>
 
           {/* 标签 */}
