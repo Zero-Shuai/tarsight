@@ -7,9 +7,9 @@ Quick reference for Tarsight development. Detailed docs in `/docs/`.
 Tarsight: API testing platform (Next.js 16 + Supabase + Python pytest)
 
 ```
-tarsight-dashboard/    # Frontend (Next.js)
-supabase_version/       # Backend (Python)
-docs/                   # Full documentation
+frontend/              # Frontend (Next.js)
+backend/               # Backend (Python)
+docs/                  # Full documentation
 ```
 
 ## Critical Rules
@@ -77,11 +77,11 @@ components/test-case-actions.tsx
 
 ```bash
 # Frontend
-cd tarsight-dashboard && npm run dev
+cd frontend && npm run dev
 npx tsc --noEmit  # Type check
 
 # Backend
-cd supabase_version && .venv/bin/python run.py
+cd backend && .venv/bin/python run.py
 
 # Docker
 docker compose up -d --build
@@ -158,8 +158,8 @@ grep -r "TestCaseForm" app/ --include="*.tsx"
 - `components/test-case-workbench.tsx` - Main list view
 
 ### Backend
-- `supabase_version/run.py` - Python entry point
-- `supabase_version/database/migrations/` - Database schema changes
+- `backend/run.py` - Python entry point
+- `backend/database/migrations/` - Database schema changes
 
 ## 🚨 Recent Lessons Learned
 

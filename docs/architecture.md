@@ -11,7 +11,7 @@
 
 ```
 Tarsight/
-├── tarsight-dashboard/     # Next.js 16 Frontend
+├── frontend/              # Next.js 16 Frontend
 │   ├── app/                # App Router pages & API routes
 │   ├── components/         # React components
 │   ├── lib/                # Utilities & types
@@ -20,7 +20,7 @@ Tarsight/
 │   │   ├── supabase/       # Supabase clients
 │   │   └── test-execution-queue.ts
 │   └── public/             # Static assets
-├── supabase_version/       # Python Backend
+├── backend/               # Python Backend
 │   ├── run.py              # Main test execution entry point
 │   ├── utils/              # Utilities & clients
 │   │   ├── supabase_client.py

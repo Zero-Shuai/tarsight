@@ -1,13 +1,13 @@
 # Tarsight API 测试平台
 
-一个现代化的 API 测试管理和执行平台，基于 Next.js 14 和 Python 构建。
+一个现代化的 API 测试管理和执行平台，基于 Next.js 16 和 Python 构建。
 
 ## 🚀 快速开始
 
 ### 前置要求
 
 - Node.js 18+
-- Python 3.10+
+- Python 3.13+
 - Supabase 账户
 
 ### 安装步骤
@@ -18,7 +18,7 @@ git clone <repository-url>
 cd Tarsight
 
 # 2. 安装前端依赖
-cd tarsight-dashboard
+cd frontend
 npm install
 
 # 3. 配置环境变量
@@ -26,15 +26,15 @@ cp .env.example .env.local
 # 编辑 .env.local 填入 Supabase 配置
 
 # 4. 安装 Python 依赖
-cd ../supabase_version
-pip install -r requirements.txt
+cd ../backend
+uv sync  # 或 pip install -r requirements.txt
 
 # 5. 配置 Python 环境
 cp .env.example .env
 # 编辑 .env 填入配置
 
 # 6. 启动前端
-cd ../tarsight-dashboard
+cd ../frontend
 npm run dev
 
 # 7. 访问应用
@@ -72,12 +72,12 @@ open http://localhost:3000
 
 \`\`\`
 Tarsight/
-├── tarsight-dashboard/      # Next.js 前端
+├── frontend/              # Next.js 前端
 │   ├── app/                 # 页面和 API
 │   ├── components/          # React 组件
 │   └── lib/                 # 工具库
 │
-├── supabase_version/        # Python 测试框架
+├── backend/               # Python 测试框架
 │   ├── utils/               # 工具模块
 │   ├── testcases/           # 测试用例
 │   └── run.py               # 主执行器
@@ -90,14 +90,14 @@ Tarsight/
 ## 🛠️ 技术栈
 
 ### 前端
-- Next.js 14 (App Router)
+- Next.js 16 (App Router)
 - TypeScript
 - Tailwind CSS
 - shadcn/ui
 - Supabase
 
 ### 后端
-- Python 3.10+
+- Python 3.13+
 - Pytest
 - Supabase (PostgreSQL)
 

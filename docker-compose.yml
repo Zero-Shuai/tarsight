@@ -9,7 +9,7 @@ services:
   frontend:
     build:
       context: .
-      dockerfile: tarsight-dashboard/deployment/Dockerfile
+      dockerfile: frontend/deployment/Dockerfile
       # 传递构建参数（Next.js 构建时需要这些环境变量）
       args:
         - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
@@ -29,9 +29,9 @@ services:
       # 服务端密钥（用于 API 路由）
       - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
       # Python 测试执行环境配置
-      - PROJECT_ROOT=/app/python
+      - PROJECT_ROOT=/app/backend
       - PYTHON_PATH=/usr/bin/python3
-      - PYTHONPATH=/app/python
+      - PYTHONPATH=/app/backend
       # Supabase Python 客户端配置
       - SUPABASE_URL=${SUPABASE_URL:-https://your-project.supabase.co}
       - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}

@@ -84,11 +84,11 @@ echo ""
 # 4. 处理类型检查选项
 if [ "$NO_LINT" = true ]; then
     echo -e "${YELLOW}[4/7] 临时禁用类型检查...${NC}"
-    if [ -f "tarsight-dashboard/package.json" ]; then
+    if [ -f "frontend/package.json" ]; then
         # 备份原文件
-        cp tarsight-dashboard/package.json tarsight-dashboard/package.json.bak
+        cp frontend/package.json frontend/package.json.bak
         # 修改build命令添加--no-lint
-        sed -i 's/"build": "next build"/"build": "next build --no-lint"/' tarsight-dashboard/package.json
+        sed -i 's/"build": "next build"/"build": "next build --no-lint"/' frontend/package.json
         echo -e "${GREEN}✓ 已临时禁用类型检查${NC}"
     fi
 else
@@ -110,8 +110,8 @@ else
     # 自动回滚
     echo -e "${YELLOW}自动回滚...${NC}"
     git reset --hard HEAD~1
-    if [ -f "tarsight-dashboard/package.json.bak" ]; then
-        mv tarsight-dashboard/package.json.bak tarsight-dashboard/package.json
+    if [ -f "frontend/package.json.bak" ]; then
+        mv frontend/package.json.bak frontend/package.json
     fi
     docker compose build frontend
     docker compose up -d frontend --no-deps --force-recreate

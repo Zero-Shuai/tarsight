@@ -281,7 +281,7 @@ docker compose exec frontend /bin/sh -c "$PYTHON_PATH $PROJECT_ROOT/run.py --hel
 
 ```bash
 # Solution 1: Fix type errors
-cd tarsight-dashboard
+cd frontend
 npx tsc --noEmit
 
 # Solution 2: Skip lint for this commit
