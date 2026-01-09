@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -17,19 +17,19 @@ interface TestCaseFormProps {
   onCancel: () => void
 }
 
+// Move helper function outside component to avoid recreation
+const parseJsonField = (field: any) => {
+  if (!field) return {}
+  if (typeof field === 'object') return field
+  try {
+    return JSON.parse(field)
+  } catch {
+    return {}
+  }
+}
+
 export function TestCaseForm({ testCase, modules, onSuccess, onCancel }: TestCaseFormProps) {
   const [loading, setLoading] = useState(false)
-
-  // 解析从数据库读取的 JSON 字符串字段
-  const parseJsonField = (field: any) => {
-    if (!field) return {}
-    if (typeof field === 'object') return field
-    try {
-      return JSON.parse(field)
-    } catch {
-      return {}
-    }
-  }
 
   const [formData, setFormData] = useState({
     case_id: testCase?.case_id || '',
@@ -86,7 +86,7 @@ export function TestCaseForm({ testCase, modules, onSuccess, onCancel }: TestCas
     value: ''
   })
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
 
@@ -134,21 +134,21 @@ export function TestCaseForm({ testCase, modules, onSuccess, onCancel }: TestCas
     } finally {
       setLoading(false)
     }
-  }
+  }, [formData, testCase, onSuccess])
 
-  const addTag = () => {
+  const addTag = useCallback(() => {
     if (newTag && !formData.tags.includes(newTag)) {
       setFormData({ ...formData, tags: [...formData.tags, newTag] })
       setNewTag('')
     }
-  }
+  }, [newTag, formData.tags])
 
-  const removeTag = (tag: string) => {
+  const removeTag = useCallback((tag: string) => {
     setFormData({ ...formData, tags: formData.tags.filter((t: string) => t !== tag) })
-  }
+  }, [formData.tags])
 
   // 添加验证规则
-  const addValidationRule = () => {
+  const addValidationRule = useCallback(() => {
     if (!newValidationRule.path || !newValidationRule.value) {
       alert('请填写完整的验证规则（字段路径和期望值）')
       return
@@ -177,10 +177,10 @@ export function TestCaseForm({ testCase, modules, onSuccess, onCancel }: TestCas
 
     // 清空输入
     setNewValidationRule({ path: '', operator: 'equals', value: '' })
-  }
+  }, [formData, newValidationRule])
 
   // 删除验证规则
-  const removeValidationRule = (index: number) => {
+  const removeValidationRule = useCallback((index: number) => {
     if (!formData.validation_rules || !formData.validation_rules.checks) return
 
     const updatedRules = {
@@ -193,7 +193,7 @@ export function TestCaseForm({ testCase, modules, onSuccess, onCancel }: TestCas
       ...formData,
       validation_rules: updatedRules.checks.length > 0 ? updatedRules : null
     })
-  }
+  }, [formData.validation_rules])
 
   return (
     <Card className="max-w-4xl mx-auto">
