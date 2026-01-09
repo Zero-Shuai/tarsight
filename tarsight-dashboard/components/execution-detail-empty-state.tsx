@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Filter, FileSearch } from 'lucide-react'
 
@@ -6,7 +7,7 @@ interface EmptyStateProps {
   onClearFilters: () => void
 }
 
-export function ExecutionDetailEmptyState({ hasActiveFilters, onClearFilters }: EmptyStateProps) {
+function ExecutionDetailEmptyStateComponent({ hasActiveFilters, onClearFilters }: EmptyStateProps) {
   if (hasActiveFilters) {
     return (
       <div className="py-20 px-8 text-center">
@@ -41,3 +42,5 @@ export function ExecutionDetailEmptyState({ hasActiveFilters, onClearFilters }: 
     </div>
   )
 }
+
+export const ExecutionDetailEmptyState = memo(ExecutionDetailEmptyStateComponent)

@@ -1,4 +1,6 @@
-export function ExecutionListSkeleton() {
+import { memo } from 'react'
+
+function ExecutionListSkeletonComponent() {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-50 overflow-hidden">
       {/* Header Skeleton */}
@@ -59,3 +61,5 @@ export function ExecutionListSkeleton() {
     </div>
   )
 }
+
+export const ExecutionListSkeleton = memo(ExecutionListSkeletonComponent)

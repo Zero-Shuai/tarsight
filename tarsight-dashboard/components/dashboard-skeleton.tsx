@@ -1,6 +1,7 @@
+import { memo } from 'react'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 
-export function DashboardSkeleton() {
+function DashboardSkeletonComponent() {
   return (
     <div className="min-h-screen bg-slate-50 py-12 px-8">
       <div className="max-w-7xl mx-auto space-y-8">
@@ -75,3 +76,5 @@ export function DashboardSkeleton() {
     </div>
   )
 }
+
+export const DashboardSkeleton = memo(DashboardSkeletonComponent)

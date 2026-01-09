@@ -1,5 +1,6 @@
 'use client'
 
+import { memo } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -21,7 +22,7 @@ interface TestExecutionDialogProps {
   modules: Module[]
 }
 
-export function TestExecutionDialog({ modules }: TestExecutionDialogProps) {
+function TestExecutionDialogComponent({ modules }: TestExecutionDialogProps) {
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -42,3 +43,5 @@ export function TestExecutionDialog({ modules }: TestExecutionDialogProps) {
     </Dialog>
   )
 }
+
+export const TestExecutionDialog = memo(TestExecutionDialogComponent)

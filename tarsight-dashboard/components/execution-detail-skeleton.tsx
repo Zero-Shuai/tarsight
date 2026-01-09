@@ -1,4 +1,6 @@
-export function ExecutionDetailSkeleton() {
+import { memo } from 'react'
+
+function ExecutionDetailSkeletonComponent() {
   return (
     <div className="space-y-4">
       {/* Filter Header Skeleton */}
@@ -38,7 +40,7 @@ export function ExecutionDetailSkeleton() {
   )
 }
 
-export function CaseRowSkeleton() {
+function CaseRowSkeletonComponent() {
   return (
     <div className="flex items-center gap-4 px-4 py-2.5 border-b border-slate-50">
       <div className="w-20 h-4 bg-slate-200 rounded animate-pulse" />
@@ -50,3 +52,6 @@ export function CaseRowSkeleton() {
     </div>
   )
 }
+
+export const ExecutionDetailSkeleton = memo(ExecutionDetailSkeletonComponent)
+export const CaseRowSkeleton = memo(CaseRowSkeletonComponent)
