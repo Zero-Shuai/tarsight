@@ -1,13 +1,16 @@
-# Tarsight Supabase版本 - 数据库集成测试系统
+# Tarsight Backend - Python 测试执行引擎
 
-专注于Supabase数据库集成的API测试框架，支持测试结果持久化存储和云端数据分析。
+专注于 Supabase 数据库集成的 API 测试框架，支持测试结果持久化存储和云端数据分析。
 
-## ���� 快速开始
+## 🚀 快速开始
 
 ### 基本使用
 
 ```bash
-# 运行Supabase集成测试（默认模式）
+# 前端 API 调用（生产模式）
+# 通过前端 Web 界面执行测试
+
+# CLI 模式（开发/调试）
 python run.py
 
 # 指定测试执行名称
@@ -15,228 +18,240 @@ python run.py --name "登录模块测试"
 
 # 详细输出模式
 python run.py --verbose
-
-# 指定测试执行名称并详细输出
-python run.py --name "回归测试" --verbose
 ```
 
-### 报告生成
+### 工具脚本
+
+所有工具脚本已移至 `scripts-archive/` 目录：
 
 ```bash
-# 生成增强HTML报告
-python scripts/quick_enhanced_report_database.py
+# 测试 Supabase 连接
+python scripts-archive/testing/test_supabase_connection.py
 
-# ��试Supabase连接
-python scripts/test_supabase_connection.py
+# 生成测试报告
+python scripts-archive/testing/quick_enhanced_report_database.py
 
-# 设置Supabase数据库表
-python scripts/setup_supabase.py
+# 设置 Supabase 数据库
+python scripts-archive/setup/setup_supabase.py
+
+# 清理测试报告
+bash scripts-archive/ops/cleanup_reports.sh
 ```
+
+详见：[Scripts Archive 文档](scripts-archive/README.md)
 
 ## 📁 项目结构
 
 ```
-supabase_version/
-├── 🚀 run.py                      # 主运行脚本（集成Supabase）
-├── 📊 testcases/
-│   ├── test_tarsight.py          # 测试用例实现
-│   ├── test_cases.csv            # CSV表格测试数据
-│   └── table_test_data.py        # CSV数据读取器
-├── 🔧 scripts/
-│   ├── run_tests_database.py     # 数据库版测试执行脚本
-│   ├── quick_enhanced_report_database.py # 数据库版HTML报告
-│   ├── test_supabase_connection.py # Supabase连接测试
-│   └── setup_supabase.py         # Supabase数据库设置
-├── 🗄️ utils/
-│   ├── test_execution_recorder.py # 测试执行记录器
-│   └── file_test_recorder.py     # 文件测试记录器
-├── 🗄️ supabase/
-│   ├── client.py                 # Supabase客户端
-│   └── simple_client.py          # 简化Supabase客户端
-├── 🗄️ database/
-│   ├── create_execution_tables.py # 执行表创建脚本
-│   ├── verify_migration.py       # 迁移验证
-│   └── migrate_data_final.py     # 数据迁移脚本
-├── 📄 .env                       # Supabase环境配置
-├── 📄 conftest.py                # pytest配置（Supabase集成版）
-└── 📄 reports/                   # 测试报告目录
+backend/
+├── 🚀 execute_test.py            # 前端 API 调用入口（生产）
+├── 🎯 run.py                     # CLI 执行入口（开发）
+├── ⚙️ config.py                  # 配置管理
+├── 📦 pyproject.toml             # Python 项目配置
+│
+├── 🧪 testcases/                 # 测试用例
+│   ├── test_tarsight.py          # 测试实现
+│   └── table_test_data.py        # 测试数据
+│
+├── 🔧 utils/                     # 核心工具模块
+│   ├── supabase_client.py        # Supabase 客户端
+│   ├── json_test_recorder.py     # JSON 记录器
+│   ├── file_test_recorder.py     # 文件记录器
+│   ├── env_config.py             # 环境配置
+│   ├── request_util.py           # HTTP 工具
+│   ├── assertion_engine.py       # 断言引擎
+│   ├── token_validator.py        # Token 验证
+│   ├── conftest.py               # Pytest fixtures
+│   └── test_tarsight.py          # Pytest 配置
+│
+├── 🗄️ database/                  # 数据库相关
+│   ├── schema/                   # 数据库架构参考
+│   ├── archive/                  # 历史架构
+│   └── migrations/               # ⚠️ 已废弃，使用 supabase/migrations/
+│
+├── 📚 docs/                      # 后端文档
+├── 📦 archive/                   # 归档代码
+├── 📊 reports/                   # 测试报告
+│
+├── 🛠️ scripts/                   # （已移至 scripts-archive/）
+└── 🗃️ scripts-archive/           # 工具脚本归档
+    ├── setup/                    # 设置脚本
+    ├── testing/                  # 测试脚本
+    ├── migration/                # 迁移脚本
+    ├── ops/                      # 运维工具
+    └── debug/                    # 调试工具
 ```
 
-## 🔧 Supabase配置
+## 🔧 环境配置
 
-### 环境变量配置
+### 环境变量
 
-在 `.env` 文件中配置Supabase连接：
+在 `.env` 文件中配置：
 
 ```bash
-# Supabase配置
+# Supabase 配置
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
-# API配置
-BASE_URL=https://t-stream-iq.tarsv.com
+# API 配置
+BASE_URL=https://your-api-endpoint.com
 API_TOKEN=Bearer YOUR_API_TOKEN
 
-# 记录配置
-SUPABASE_RECORDING=true
-TARSIGHT_EXECUTION_ID=auto-generated
+# 数据源配置
+DATA_SOURCE=supabase
+
+# 日志配置
+LOG_LEVEL=INFO
+JSON_RECORDING=true
 ```
 
-### 数据库表结构
+### Python 依赖
 
-系统自动创建以下表：
+```bash
+# 使用 uv（推荐）
+uv sync
 
-- `test_executions`: 测试执行记录
-- `test_results`: 测试结果详情
-- `api_requests`: API请求记录
-- `api_responses`: API响应记录
+# 或使用 pip
+pip install -r requirements.txt
+```
 
 ## 📊 核心功能
 
-### 🗄️ 数据持久化
+### 1. 测试执行
+
+**前端 API 模式**（生产）:
+- 前端通过 `execute_test.py` 执行测试
+- 支持异步队列执行
+- 实时状态更新
+
+**CLI 模式**（开发）:
+```bash
+python run.py
+```
+
+### 2. 结果存储
 
 - **执行记录**: 每次测试运行的完整记录
-- **结果存储**: 测试用例的详细结果
-- **API日志**: 请求和响应的完整数据
-- **错误追踪**: 失败测试的详细信息
+- **结果详情**: 测试用例的详细结果
+- **API 请求**: 完整的请求响应数据
 
-### 📈 数据分析
+### 3. 断言系统
 
-- **趋势分析**: 测试通过率趋势
-- **性能监控**: 响应时间和性能指标
-- **失败统计**: 常见失败原因分析
-- **模块覆盖**: 测试覆盖率统计
+- JSONPath 表达式支持
+- JSON Schema 验证
+- 自定义断言规则
 
-### 🔄 实时同步
+详见：[断言系统文档](../docs/assertions-guide.md)
 
-- **云端存储**: 测试结果实时同步到Supabase
-- **多端访问**: 从任何地方查看测试结果
-- **团队协作**: 团队成员共享测试数据
-- **历史记录**: 完整的测试历史追踪
+## 🔗 与前端集成
 
-## 🚀 数据库设置
+### API 端点
 
-### 自动设置
+前端通过以下 API 端点调用后端：
 
-```bash
-# 一键设置Supabase数据库表
-python scripts/setup_supabase.py
+```
+POST /api/test/execute
 ```
 
-### 手动设置
+### 执行流程
 
-```bash
-# 创建执行表
-python database/create_execution_tables.py
+1. 前端创建执行记录（Supabase）
+2. 前端调用 `execute_test.py`（spawn 子进程）
+3. Python 从 Supabase 读取测试用例
+4. 执行 API 测试
+5. 结果写回 Supabase
+6. 前端轮询获取状态
 
-# 验证迁移
-python database/verify_migration.py
+### 环境变量
+
+前端容器需要配置：
+
+```yaml
+PROJECT_ROOT=/app/backend
+PYTHON_PATH=/usr/bin/python3
+PYTHONPATH=/app/backend
 ```
 
-## 📋 测试执行流程
+## 📚 文档
 
-### 标准流程
-
-1. **初始化**: 创建测试执行记录
-2. **设置环境**: 配置环境变量和连接
-3. **运行测试**: 执行pytest测试套件
-4. **记录结果**: 实时记录测试结果到数据库
-5. **生成报告**: 创建HTML报告和数据分析
-
-### 命令示例
-
-```bash
-# 运行完整测试套件
-python run.py --name "夜间回归测试"
-
-# 调试模式运行
-python run.py --verbose
-
-# 生成数据库报告
-python scripts/quick_enhanced_report_database.py
-```
-
-## 🔍 监控和调试
-
-### 连接测试
-
-```bash
-# 测试Supabase连接
-python scripts/test_supabase_connection.py
-
-# 诊断数据库问题
-python diagnose_supabase.py
-```
-
-### 数据验证
-
-```bash
-# 验证数据迁移
-python database/verify_migration.py
-
-# 快速测试Supabase集成
-python quick_test_supabase.py
-```
-
-## 📊 报告功能
-
-### 数据库增强报告
-
-- **云端数据**: 基于Supabase数据的报告
-- **历史对比**: 与历史执行记录对比
-- **趋势分析**: 测试趋势图表
-- **性能监控**: 响应时间分析
-
-### 报告生成
-
-```bash
-# 生成增强HTML报告
-python scripts/quick_enhanced_report_database.py
-```
+- [数据库迁移指南](../docs/database-migrations-guide.md)
+- [断言系统指南](../docs/assertions-guide.md)
+- [故障排查文档](../docs/troubleshooting.md)
+- [Scripts Archive](scripts-archive/README.md)
 
 ## 🛠️ 开发指南
 
-### 添加新测试
+### 添加新测试用例
 
-1. 在 `test_cases.csv` 中添加测试数据
-2. 在 `test_tarsight.py` 中实现测试逻辑
-3. 运行测试并验证结果
+1. 在 Supabase 中创建测试用例记录
+2. 前端自动加载用例配置
+3. 后端 `test_tarsight.py` 执行测试
 
-### 自定义记录器
+### 添加新工具脚本
 
-```python
-from utils.test_execution_recorder import start_test_execution, finish_test_execution
+工具脚本应放在 `scripts-archive/` 下对应分类目录：
+- `setup/` - 一次性设置脚本
+- `testing/` - 测试验证脚本
+- `migration/` - 数据迁移脚本
+- `ops/` - 运维工具
+- `debug/` - 调试工具
 
-# 自定义执行记录
-execution_id = start_test_execution("自定义测试")
-# ... 运行测试 ...
-finish_test_execution()
+### 修改核心功能
+
+核心功能文件：
+- `execute_test.py` - 执行逻辑
+- `utils/supabase_client.py` - 数据库操作
+- `utils/assertion_engine.py` - 断言处理
+
+## ⚠️ 重要说明
+
+### 数据库迁移
+
+**不再使用** `backend/database/migrations/`，所有迁移已统一到：
+
+```
+supabase/migrations/
 ```
 
-## 🔐 安全考虑
+详见：[数据库迁移指南](../docs/database-migrations-guide.md)
 
-- **密钥管理**: 使用环境变量存储敏感信息
-- **权限控制**: 使用适当的Supabase角色和权限
-- **数据加密**: 敏感数据传输和存储加密
-- **访问控制**: 实施适当的访问控制策略
+### Scripts 目录
 
-## 📋 最佳实践
+`backend/scripts/` 已移至 `backend/scripts-archive/`，详见：
+[Scripts Archive README](scripts-archive/README.md)
 
-1. **环境隔离**: 开发、测试、生产环境分离
-2. **数据备份**: 定期备份Supabase数据
-3. **监控告警**: 设置测试失败告警
-4. **性能优化**: 优化数据库查询和索引
-5. **日志记录**: 完整的操作日志记录
+## 🐛 故障排查
 
-## 🤝 贡献指南
+### 连接问题
 
-1. Fork 项目
-2. 创建功能分支
-3. 提交代码更改
-4. 推送到分支
-5. 创建Pull Request
+```bash
+# 测试 Supabase 连接
+python scripts-archive/testing/test_supabase_connection.py
+```
 
-## 📄 许可证
+### 执行卡住
 
-本项目采用 MIT 许可证。
+```bash
+# 修复卡住的执行
+python scripts-archive/debug/fix_stuck_executions.py
+```
+
+### 环境问题
+
+```bash
+# 测试环境配置
+python scripts-archive/debug/test_env.py
+```
+
+更多故障排查：[docs/troubleshooting.md](../docs/troubleshooting.md)
+
+## 📞 获取帮助
+
+- 查看文档：[docs/](../docs/)
+- 后端文档：[backend/docs/](docs/)
+- 工具脚本：[scripts-archive/](scripts-archive/)
+
+---
+
+**Tarsight Backend** - 让 API 测试更简单！ 🚀
