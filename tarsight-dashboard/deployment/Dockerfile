@@ -7,8 +7,12 @@ WORKDIR /app
 # 复制 package.json（只复制这一个文件以利用 Docker 缓存）
 COPY tarsight-dashboard/package.json ./
 
-# 安装依赖（使用 npm install 而不是 npm ci，因为可能没有 package-lock.json）
-RUN npm install
+# 安装依赖（使用国内镜像源和重试机制）
+RUN npm config set registry https://registry.npmmirror.com && \
+    npm config set fetch-retries 5 && \
+    npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 120000 && \
+    npm install
 
 # 复制源代码
 COPY tarsight-dashboard/ .
