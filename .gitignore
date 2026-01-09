@@ -47,6 +47,7 @@ Thumbs.db
 *~
 
 # Claude Code configuration
+.claude/
 CLAUDE.md
 
 # Test artifacts
