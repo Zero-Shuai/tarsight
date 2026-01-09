@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, memo, useMemo } from 'react'
 import { X, Loader2, CheckCircle2, XCircle, Circle, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -12,7 +12,7 @@ interface TestCaseRunDrawerProps {
   onClose: () => void
 }
 
-export function TestCaseRunDrawer({ testCase, onClose }: TestCaseRunDrawerProps) {
+function TestCaseRunDrawerComponent({ testCase, onClose }: TestCaseRunDrawerProps) {
   const [executing, setExecuting] = useState(false)
   const [result, setResult] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
@@ -50,6 +50,46 @@ export function TestCaseRunDrawer({ testCase, onClose }: TestCaseRunDrawerProps)
     executeTest()
   }, [executeTest])
 
+  // Memoized status icon
+  const statusIcon = useMemo(() => {
+    if (executing) {
+      return <Loader2 className="h-5 w-5 text-[#3B82F6] animate-spin" />
+    }
+    if (result) {
+      if (result.status === 'passed') {
+        return <CheckCircle2 className="h-5 w-5 text-[#10B981]" />
+      } else if (result.status === 'failed') {
+        return <XCircle className="h-5 w-5 text-[#EF4444]" />
+      } else {
+        return <Circle className="h-5 w-5 text-[#F59E0B]" />
+      }
+    }
+    if (error) {
+      return <XCircle className="h-5 w-5 text-[#EF4444]" />
+    }
+    return null
+  }, [executing, result, error])
+
+  // Memoized badge class
+  const badgeClass = useMemo(() => {
+    if (!result) return ''
+    if (result.status === 'passed') {
+      return 'bg-[#DCFCE7] text-[#10B981] border-[#10B981]/20'
+    } else if (result.status === 'failed') {
+      return 'bg-[#FEE2E2] text-[#EF4444] border-[#EF4444]/20'
+    } else {
+      return 'bg-[#FEF3C7] text-[#F59E0B] border-[#F59E0B]/20'
+    }
+  }, [result])
+
+  // Memoized status text
+  const statusText = useMemo(() => {
+    if (!result) return ''
+    if (result.status === 'passed') return '通过'
+    if (result.status === 'failed') return '失败'
+    return '跳过'
+  }, [result])
+
   return (
     <div className="fixed inset-0 z-50 flex">
       {/* Backdrop */}
@@ -60,19 +100,7 @@ export function TestCaseRunDrawer({ testCase, onClose }: TestCaseRunDrawerProps)
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
           <div className="flex items-center gap-3">
-            {executing ? (
-              <Loader2 className="h-5 w-5 text-[#3B82F6] animate-spin" />
-            ) : result ? (
-              result.status === 'passed' ? (
-                <CheckCircle2 className="h-5 w-5 text-[#10B981]" />
-              ) : result.status === 'failed' ? (
-                <XCircle className="h-5 w-5 text-[#EF4444]" />
-              ) : (
-                <Circle className="h-5 w-5 text-[#F59E0B]" />
-              )
-            ) : error ? (
-              <XCircle className="h-5 w-5 text-[#EF4444]" />
-            ) : null}
+            {statusIcon}
 
             <div>
               <h2 className="text-lg font-semibold text-slate-900">{testCase.test_name}</h2>
@@ -118,12 +146,8 @@ export function TestCaseRunDrawer({ testCase, onClose }: TestCaseRunDrawerProps)
             <div className="space-y-6">
               {/* Status Badge */}
               <div className="flex items-center gap-3">
-                <Badge className={
-                  result.status === 'passed' ? 'bg-[#DCFCE7] text-[#10B981] border-[#10B981]/20' :
-                  result.status === 'failed' ? 'bg-[#FEE2E2] text-[#EF4444] border-[#EF4444]/20' :
-                  'bg-[#FEF3C7] text-[#F59E0B] border-[#F59E0B]/20'
-                }>
-                  {result.status === 'passed' ? '通过' : result.status === 'failed' ? '失败' : '跳过'}
+                <Badge className={badgeClass}>
+                  {statusText}
                 </Badge>
 
                 {result.response_time && (
@@ -205,3 +229,10 @@ export function TestCaseRunDrawer({ testCase, onClose }: TestCaseRunDrawerProps)
     </div>
   )
 }
+
+export const TestCaseRunDrawer = memo(TestCaseRunDrawerComponent, (prevProps, nextProps) => {
+  return (
+    prevProps.testCase?.id === nextProps.testCase?.id &&
+    prevProps.onClose === nextProps.onClose
+  )
+})

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, memo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -39,7 +39,7 @@ interface QueueConfigFormProps {
   onUpdate?: () => void
 }
 
-export function QueueConfigForm({ onUpdate }: QueueConfigFormProps) {
+function QueueConfigFormComponent({ onUpdate }: QueueConfigFormProps) {
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [reloading, setReloading] = useState(false)
@@ -55,7 +55,7 @@ export function QueueConfigForm({ onUpdate }: QueueConfigFormProps) {
   const [diagnostics, setDiagnostics] = useState<QueueDiagnostics | null>(null)
 
   // 加载配置
-  const loadConfig = async () => {
+  const loadConfig = useCallback(async () => {
     setLoading(true)
     try {
       const projectId = process.env.NEXT_PUBLIC_PROJECT_ID
@@ -92,10 +92,10 @@ export function QueueConfigForm({ onUpdate }: QueueConfigFormProps) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [showDiagnostics])
 
   // 加载诊断信息
-  const loadDiagnostics = async () => {
+  const loadDiagnostics = useCallback(async () => {
     try {
       const response = await fetch('/api/queue/diagnostics')
       if (response.ok) {
@@ -105,10 +105,10 @@ export function QueueConfigForm({ onUpdate }: QueueConfigFormProps) {
     } catch (error: any) {
       console.error('加载诊断信息失败:', error)
     }
-  }
+  }, [])
 
   // 保存配置
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     setSaving(true)
     try {
       const projectId = process.env.NEXT_PUBLIC_PROJECT_ID
@@ -144,10 +144,10 @@ export function QueueConfigForm({ onUpdate }: QueueConfigFormProps) {
     } finally {
       setSaving(false)
     }
-  }
+  }, [config, onUpdate, loadConfig, loadDiagnostics])
 
   // 重新加载队列状态
-  const handleReloadStatus = async () => {
+  const handleReloadStatus = useCallback(async () => {
     setReloading(true)
     try {
       const response = await fetch('/api/queue/status')
@@ -163,10 +163,10 @@ export function QueueConfigForm({ onUpdate }: QueueConfigFormProps) {
     } finally {
       setReloading(false)
     }
-  }
+  }, [showDiagnostics, loadDiagnostics])
 
   // 清空队列
-  const handleClearQueue = async () => {
+  const handleClearQueue = useCallback(async () => {
     if (!confirm('确定要清空队列吗？这将取消所有排队等待的任务。')) {
       return
     }
@@ -185,10 +185,10 @@ export function QueueConfigForm({ onUpdate }: QueueConfigFormProps) {
     } finally {
       setClearing(false)
     }
-  }
+  }, [handleReloadStatus])
 
   // 重置队列状态
-  const handleResetQueue = async () => {
+  const handleResetQueue = useCallback(async () => {
     if (!confirm('确定要重置队列状态吗？\n\n这将中断所有正在运行的任务并清空队列，仅在队列卡住时使用！')) {
       return
     }
@@ -207,23 +207,23 @@ export function QueueConfigForm({ onUpdate }: QueueConfigFormProps) {
     } finally {
       setResetting(false)
     }
-  }
+  }, [handleReloadStatus])
 
   // 切换诊断信息显示
-  const toggleDiagnostics = async () => {
+  const toggleDiagnostics = useCallback(async () => {
     const newValue = !showDiagnostics
     setShowDiagnostics(newValue)
     if (newValue) {
       await loadDiagnostics()
     }
-  }
+  }, [showDiagnostics, loadDiagnostics])
 
   useEffect(() => {
     loadConfig()
     // 每5秒刷新一次状态
     const interval = setInterval(handleReloadStatus, 5000)
     return () => clearInterval(interval)
-  }, [])
+  }, [loadConfig, handleReloadStatus])
 
   return (
     <div className="space-y-6">
@@ -430,3 +430,5 @@ export function QueueConfigForm({ onUpdate }: QueueConfigFormProps) {
     </div>
   )
 }
+
+export const QueueConfigForm = memo(QueueConfigFormComponent)

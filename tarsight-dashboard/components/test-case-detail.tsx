@@ -3,9 +3,10 @@
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
-import React from 'react'
+import React, { memo, useCallback, useMemo } from 'react'
 
-function formatDate(dateString: string): string {
+// Memoized helper functions moved outside component
+const formatDate = (dateString: string): string => {
   const date = new Date(dateString)
   return date.toLocaleString('zh-CN', {
     year: 'numeric',
@@ -16,30 +17,26 @@ function formatDate(dateString: string): string {
   })
 }
 
-function getStatusColor(status: string): string {
-  const colors = {
-    passed: 'bg-green-600 text-white border-green-600',
-    failed: 'bg-red-600 text-white border-red-600',
-    skipped: 'bg-yellow-500 text-white border-yellow-500'
-  }
-  return colors[status as keyof typeof colors] || 'bg-gray-600 text-white border-gray-600'
-}
+const STATUS_COLORS_DETAIL = {
+  passed: 'bg-green-600 text-white border-green-600',
+  failed: 'bg-red-600 text-white border-red-600',
+  skipped: 'bg-yellow-500 text-white border-yellow-500'
+} as const
 
-function getStatusIcon(status: string) {
-  const icons = {
-    passed: <CheckCircle className="h-4 w-4 text-green-600" />,
-    failed: <XCircle className="h-4 w-4 text-red-600" />,
-    skipped: <AlertCircle className="h-4 w-4 text-yellow-600" />
-  }
-  return icons[status as keyof typeof icons] || <AlertCircle className="h-4 w-4 text-gray-600" />
-}
+const getStatusColorDetail = (status: string): string =>
+  STATUS_COLORS_DETAIL[status as keyof typeof STATUS_COLORS_DETAIL] || 'bg-gray-600 text-white border-gray-600'
 
-export function TestCaseDetail({ result, index }: { result: any, index: number }) {
-  const [expanded, setExpanded] = React.useState(false)
-  const [responseExpanded, setResponseExpanded] = React.useState(true) // 默认展开
+const STATUS_ICONS_DETAIL = {
+  passed: <CheckCircle className="h-4 w-4 text-green-600" />,
+  failed: <XCircle className="h-4 w-4 text-red-600" />,
+  skipped: <AlertCircle className="h-4 w-4 text-yellow-600" />
+} as const
 
-  // 格式化 Response Body 数据
-  const formatResponseBody = (data: any, indent: number = 0): string => {
+const getStatusIconDetail = (status: string) =>
+  STATUS_ICONS_DETAIL[status as keyof typeof STATUS_ICONS_DETAIL] || <AlertCircle className="h-4 w-4 text-gray-600" />
+
+// Format Response Body helper
+const formatResponseBody = (data: any, indent: number = 0): string => {
     if (data === null || data === undefined) {
       return 'null'
     }
@@ -82,21 +79,60 @@ export function TestCaseDetail({ result, index }: { result: any, index: number }
     }
 
     return String(data)
-  }
+}
+
+interface TestCaseDetailProps {
+  result: any
+  index: number
+}
+
+function TestCaseDetailComponent({ result, index }: TestCaseDetailProps) {
+  const [expanded, setExpanded] = React.useState(false)
+  const [responseExpanded, setResponseExpanded] = React.useState(true)
+
+  // Memoized status icon
+  const statusIcon = useMemo(() => getStatusIconDetail(result.status), [result.status])
+
+  // Memoized status color
+  const statusColor = useMemo(() => getStatusColorDetail(result.status), [result.status])
+
+  // Memoized formatted response body
+  const formattedBody = useMemo(() => {
+    if (!result.response_info?.Data) return null
+    return formatResponseBody(result.response_info.Data)
+  }, [result.response_info?.Data])
+
+  // Toggle expanded state
+  const toggleExpanded = useCallback(() => {
+    setExpanded(prev => !prev)
+  }, [])
+
+  // Toggle response expanded state
+  const toggleResponseExpanded = useCallback(() => {
+    setResponseExpanded(prev => !prev)
+  }, [])
+
+  // Memoized status text
+  const statusText = useMemo(() => {
+    if (result.status === 'passed') return '通过'
+    if (result.status === 'failed') return '失败'
+    if (result.status === 'skipped') return '跳过'
+    return result.status
+  }, [result.status])
 
   return (
     <div className="border rounded-lg overflow-hidden">
       {/* 测试用例头部 */}
       <div
         className="flex items-center justify-between p-4 bg-muted/50 cursor-pointer hover:bg-muted/70 transition-colors"
-        onClick={() => setExpanded(!expanded)}
+        onClick={toggleExpanded}
       >
         <div className="flex items-center gap-4 flex-1">
           <span className="text-sm font-medium text-muted-foreground w-8">
             {index}
           </span>
           <div className="flex items-center gap-2">
-            {getStatusIcon(result.status)}
+            {statusIcon}
             <span className="font-medium">{result.test_case?.case_id || 'N/A'}</span>
             <Badge variant="outline" className="text-xs">
               {result.test_case?.module?.name || result.test_case?.module || 'N/A'}
@@ -112,10 +148,8 @@ export function TestCaseDetail({ result, index }: { result: any, index: number }
             <Clock className="h-3 w-3 inline mr-1" />
             {result.duration ? (result.duration * 1000).toFixed(0) : '0'}ms
           </div>
-          <Badge className={getStatusColor(result.status)}>
-            {result.status === 'passed' && '通过'}
-            {result.status === 'failed' && '失败'}
-            {result.status === 'skipped' && '跳过'}
+          <Badge className={statusColor}>
+            {statusText}
           </Badge>
         </div>
       </div>
@@ -230,7 +264,7 @@ export function TestCaseDetail({ result, index }: { result: any, index: number }
                 <div className="p-2 rounded bg-background">
                   <div
                     className="flex items-center justify-between cursor-pointer hover:bg-muted/50 p-1 rounded"
-                    onClick={() => setResponseExpanded(!responseExpanded)}
+                    onClick={toggleResponseExpanded}
                   >
                     <p className="text-xs text-muted-foreground">Response Body:</p>
                     <span className="text-xs text-muted-foreground">
@@ -290,3 +324,11 @@ export function TestCaseDetail({ result, index }: { result: any, index: number }
     </div>
   )
 }
+
+export const TestCaseDetail = memo(TestCaseDetailComponent, (prevProps, nextProps) => {
+  return (
+    prevProps.result?.id === nextProps.result?.id &&
+    prevProps.result?.status === nextProps.result?.status &&
+    prevProps.index === nextProps.index
+  )
+})

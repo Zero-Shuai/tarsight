@@ -5,17 +5,14 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Clock, CheckCircle, XCircle, AlertCircle, ExternalLink } from 'lucide-react'
 import Link from 'next/link'
-import React from 'react'
+import React, { memo, useCallback, useMemo } from 'react'
 
-function formatDate(dateString: string): string {
-  // 确保使用中国时区 (UTC+8)
+// Memoized helper functions moved outside component
+const formatDate = (dateString: string): string => {
   const date = new Date(dateString)
-
-  // 检查是否是有效的日期
   if (isNaN(date.getTime())) {
     return '无效时间'
   }
-
   return date.toLocaleString('zh-CN', {
     year: 'numeric',
     month: '2-digit',
@@ -28,36 +25,42 @@ function formatDate(dateString: string): string {
   })
 }
 
-function getStatusColor(status: string): string {
-  const colors = {
-    passed: 'bg-green-600 text-white border-green-600',
-    failed: 'bg-red-600 text-white border-red-600',
-    skipped: 'bg-yellow-500 text-white border-yellow-500'
-  }
-  return colors[status as keyof typeof colors] || 'bg-gray-600 text-white border-gray-600'
+const STATUS_COLORS = {
+  passed: 'bg-green-600 text-white border-green-600',
+  failed: 'bg-red-600 text-white border-red-600',
+  skipped: 'bg-yellow-500 text-white border-yellow-500'
+} as const
+
+const getStatusColor = (status: string): string =>
+  STATUS_COLORS[status as keyof typeof STATUS_COLORS] || 'bg-gray-600 text-white border-gray-600'
+
+const STATUS_ICONS = {
+  passed: <CheckCircle className="h-4 w-4 text-green-600" />,
+  failed: <XCircle className="h-4 w-4 text-red-600" />,
+  skipped: <AlertCircle className="h-4 w-4 text-yellow-600" />
+} as const
+
+const getStatusIcon = (status: string) =>
+  STATUS_ICONS[status as keyof typeof STATUS_ICONS] || <AlertCircle className="h-4 w-4 text-gray-600" />
+
+interface TestCaseExecutionHistoryProps {
+  executionHistory: any[]
 }
 
-function getStatusIcon(status: string) {
-  const icons = {
-    passed: <CheckCircle className="h-4 w-4 text-green-600" />,
-    failed: <XCircle className="h-4 w-4 text-red-600" />,
-    skipped: <AlertCircle className="h-4 w-4 text-yellow-600" />
-  }
-  return icons[status as keyof typeof icons] || <AlertCircle className="h-4 w-4 text-gray-600" />
-}
-
-export function TestCaseExecutionHistory({ executionHistory }: { executionHistory: any[] }) {
+function TestCaseExecutionHistoryComponent({ executionHistory }: TestCaseExecutionHistoryProps) {
   const [expandedItems, setExpandedItems] = React.useState<Set<string>>(new Set())
 
-  const toggleExpanded = (id: string) => {
-    const newExpanded = new Set(expandedItems)
-    if (newExpanded.has(id)) {
-      newExpanded.delete(id)
-    } else {
-      newExpanded.add(id)
-    }
-    setExpandedItems(newExpanded)
-  }
+  const toggleExpanded = useCallback((id: string) => {
+    setExpandedItems(prev => {
+      const newExpanded = new Set(prev)
+      if (newExpanded.has(id)) {
+        newExpanded.delete(id)
+      } else {
+        newExpanded.add(id)
+      }
+      return newExpanded
+    })
+  }, [])
 
   if (executionHistory.length === 0) {
     return (
@@ -223,3 +226,7 @@ export function TestCaseExecutionHistory({ executionHistory }: { executionHistor
     </div>
   )
 }
+
+export const TestCaseExecutionHistory = memo(TestCaseExecutionHistoryComponent, (prevProps, nextProps) => {
+  return prevProps.executionHistory === nextProps.executionHistory
+})
