@@ -1,5 +1,6 @@
 'use client'
 
+import { memo } from 'react'
 import { Search, X } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -21,7 +22,7 @@ interface FilterHeaderProps {
   hasActiveFilters: boolean
 }
 
-export function FilterHeader({
+function FilterHeaderComponent({
   totalCases,
   passedCount,
   failedCount,
@@ -152,3 +153,21 @@ export function FilterHeader({
     </div>
   )
 }
+
+export const FilterHeader = memo(FilterHeaderComponent, (prevProps, nextProps) => {
+  return (
+    prevProps.totalCases === nextProps.totalCases &&
+    prevProps.passedCount === nextProps.passedCount &&
+    prevProps.failedCount === nextProps.failedCount &&
+    prevProps.skippedCount === nextProps.skippedCount &&
+    prevProps.searchQuery === nextProps.searchQuery &&
+    prevProps.statusFilter === nextProps.statusFilter &&
+    prevProps.selectedModule === nextProps.selectedModule &&
+    prevProps.hasActiveFilters === nextProps.hasActiveFilters &&
+    prevProps.modules.length === nextProps.modules.length &&
+    prevProps.onSearchChange === nextProps.onSearchChange &&
+    prevProps.onStatusFilterChange === nextProps.onStatusFilterChange &&
+    prevProps.onModuleChange === nextProps.onModuleChange &&
+    prevProps.onClearFilters === nextProps.onClearFilters
+  )
+})

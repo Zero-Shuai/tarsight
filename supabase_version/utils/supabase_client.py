@@ -55,6 +55,11 @@ class SupabaseClient:
         self.session = requests.Session()
         self.session.headers.update(self.headers)
 
+        # 添加缓存支持
+        self._project_cache = None
+        self._project_cache_time = 0
+        self._cache_ttl = 300  # 5分钟缓存
+
     def _make_request(self, method: str, table: str, data: Optional[Dict] = None,
                      params: Optional[Dict] = None) -> Dict:
         """
@@ -125,9 +130,22 @@ class SupabaseClient:
             return []
 
     def get_tarsight_project(self) -> Optional[Dict[str, Any]]:
-        """获取 Tarsight 项目"""
+        """获取 Tarsight 项目（带缓存）"""
+        import time
+
+        # 检查缓存是否有效
+        if self._project_cache and (time.time() - self._project_cache_time) < self._cache_ttl:
+            return self._project_cache
+
+        # 缓存失效，重新查询
         projects = self.get_projects()
-        return next((p for p in projects if p['name'] == 'Tarsight'), None)
+        project = next((p for p in projects if p['name'] == 'Tarsight'), None)
+
+        # 更新缓存
+        self._project_cache = project
+        self._project_cache_time = time.time()
+
+        return project
 
     def get_test_cases_by_module(self, project_id: str) -> Dict[str, int]:
         """
@@ -249,25 +267,32 @@ class SupabaseClient:
             logger.info(f"📊 开始导入 {len(test_results)} 个测试结果...")
 
             # 转换并插入测试结果
-            db_results = []
-            for result in test_results:
-                # 获取测试用例 ID
-                case_id = result.get("test_case_id", "")
-                test_case_response = self.session.get(
+            # 优化：批量查询所有 test_case_id，避免 N+1 查询问题
+            unique_case_ids = list(set(r.get("test_case_id", "") for r in test_results))
+            case_id_to_db_id = {}
+
+            if unique_case_ids:
+                # 使用 in 查询一次性获取所有 case_id 对应的数据库 ID
+                case_ids_str = ','.join(f'"{cid}"' for cid in unique_case_ids)
+                test_cases_response = self.session.get(
                     f"{self.supabase_url}/rest/v1/test_cases",
                     params={
-                        'case_id': f'eq.{case_id}',
-                        'select': 'id'
+                        'case_id': f'in.({case_ids_str})',
+                        'select': 'id,case_id'
                     },
                     headers=self.headers,
                     timeout=10
                 )
 
-                test_case_db_id = None
-                if test_case_response.status_code == 200:
-                    test_cases = test_case_response.json()
-                    if test_cases:
-                        test_case_db_id = test_cases[0]['id']
+                if test_cases_response.status_code == 200:
+                    test_cases = test_cases_response.json()
+                    case_id_to_db_id = {tc['case_id']: tc['id'] for tc in test_cases}
+
+            # 构建 db_results，使用缓存的 case_id 映射
+            db_results = []
+            for result in test_results:
+                case_id = result.get("test_case_id", "")
+                test_case_db_id = case_id_to_db_id.get(case_id)
 
                 db_result = {
                     'execution_id': execution_id,

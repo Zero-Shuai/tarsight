@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
         if (!specificCases) {
           const { data, error } = await supabase
             .from('test_cases')
-            .select('*')
+            .select('id, case_id, module_id, level, test_name')
             .in('id', selectedCaseIds)
             .eq('is_active', true)
 

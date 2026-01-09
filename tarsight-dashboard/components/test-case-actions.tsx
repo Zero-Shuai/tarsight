@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback, memo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Pencil, Trash2, Play } from 'lucide-react'
 import { TestCaseForm } from './test-case-form'
@@ -12,13 +12,13 @@ interface TestCaseActionsProps {
   onUpdate: () => void
 }
 
-export function TestCaseActions({ testCase, modules, onUpdate }: TestCaseActionsProps) {
+function TestCaseActionsComponent({ testCase, modules, onUpdate }: TestCaseActionsProps) {
   const [showEdit, setShowEdit] = useState(false)
   const [loading, setLoading] = useState(false)
   const [executing, setExecuting] = useState(false)
   const [executionLock, setExecutionLock] = useState(false)
 
-  const handleDelete = async () => {
+  const handleDelete = useCallback(async () => {
     if (!confirm('确定要删除这个测试用例吗？')) return
 
     setLoading(true)
@@ -35,9 +35,9 @@ export function TestCaseActions({ testCase, modules, onUpdate }: TestCaseActions
     } finally {
       setLoading(false)
     }
-  }
+  }, [testCase.id, onUpdate])
 
-  const handleExecute = async () => {
+  const handleExecute = useCallback(async () => {
     // 多重防护：检查执行状态和锁
     if (executing || executionLock) {
       alert('测试正在执行中，请稍候...')
@@ -87,7 +87,7 @@ export function TestCaseActions({ testCase, modules, onUpdate }: TestCaseActions
       setExecutionLock(false)
     }
     // 注意：成功时不设置状态，因为会跳转页面
-  }
+  }, [testCase.id, testCase.case_id, executing, executionLock])
 
   if (showEdit) {
     return (
@@ -142,3 +142,10 @@ export function TestCaseActions({ testCase, modules, onUpdate }: TestCaseActions
     </div>
   )
 }
+
+export const TestCaseActions = memo(TestCaseActionsComponent, (prevProps, nextProps) => {
+  return (
+    prevProps.testCase?.id === nextProps.testCase?.id &&
+    prevProps.onUpdate === nextProps.onUpdate
+  )
+})

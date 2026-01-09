@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react'
 import { useRouter } from 'next/navigation'
 import { auth } from '@/lib/supabase/client'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { User, Settings, LogOut, ChevronDown } from 'lucide-react'
 
-export function UserMenu() {
+function UserMenuComponent() {
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -25,7 +25,7 @@ export function UserMenu() {
     loadUser()
   }, [])
 
-  const loadUser = async () => {
+  const loadUser = useCallback(async () => {
     try {
       const userData = await auth.getUser()
       setUser(userData)
@@ -34,18 +34,18 @@ export function UserMenu() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  const handleSignOut = async () => {
+  const handleSignOut = useCallback(async () => {
     try {
       await auth.signOut()
       router.push('/login')
     } catch (error) {
       console.error('登出失败:', error)
     }
-  }
+  }, [router])
 
-  const getUserInitials = () => {
+  const initials = useMemo(() => {
     if (user?.user_metadata?.full_name || user?.user_metadata?.name) {
       const name = user.user_metadata.full_name || user.user_metadata.name
       return name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
@@ -54,11 +54,11 @@ export function UserMenu() {
       return user.email.slice(0, 2).toUpperCase()
     }
     return 'U'
-  }
+  }, [user?.user_metadata?.full_name, user?.user_metadata?.name, user?.email])
 
-  const getDisplayName = () => {
+  const displayName = useMemo(() => {
     return user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email || '用户'
-  }
+  }, [user?.user_metadata?.full_name, user?.user_metadata?.name, user?.email])
 
   if (loading) {
     return (
@@ -75,11 +75,11 @@ export function UserMenu() {
         <Button variant="ghost" className="flex items-center gap-2 px-3 hover:bg-white/5 text-slate-300 hover:text-white">
           <Avatar className="w-8 h-8">
             <AvatarFallback className="bg-blue-600 text-white text-sm font-medium">
-              {getUserInitials()}
+              {initials}
             </AvatarFallback>
           </Avatar>
           <span className="text-sm font-medium hidden md:inline-block">
-            {getDisplayName()}
+            {displayName}
           </span>
           <ChevronDown className="w-4 h-4 text-slate-400" />
         </Button>
@@ -87,7 +87,7 @@ export function UserMenu() {
       <DropdownMenuContent align="end" className="w-56 bg-slate-800 border border-white/10 text-slate-200">
         <DropdownMenuLabel>
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium text-white">{getDisplayName()}</p>
+            <p className="text-sm font-medium text-white">{displayName}</p>
             <p className="text-xs text-slate-400">{user?.email}</p>
           </div>
         </DropdownMenuLabel>
@@ -109,3 +109,5 @@ export function UserMenu() {
     </DropdownMenu>
   )
 }
+
+export const UserMenu = memo(UserMenuComponent)

@@ -56,7 +56,7 @@ export const StatsCards = memo(function StatsCards({
     }
   }, [avgPassRate])
 
-  const cards = [
+  const cards = useMemo(() => [
     {
       label: '总执行次数',
       value: totalExecutions.toLocaleString(),
@@ -91,7 +91,7 @@ export const StatsCards = memo(function StatsCards({
       iconBg: '#FEF2F2', // Red 50
       showProgress: false
     }
-  ]
+  ], [totalExecutions, avgPassRate, totalTestCases, failedCount, passRateColor, passRateIconBg])
 
   return (
     <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4 animate-in fade-in duration-500">

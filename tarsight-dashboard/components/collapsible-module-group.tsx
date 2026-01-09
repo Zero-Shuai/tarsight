@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, memo } from 'react'
+import { useState, memo, useMemo, useCallback } from 'react'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { CompactCaseRow } from './compact-case-row'
 import { Badge } from '@/components/ui/badge'
@@ -21,15 +21,27 @@ export const CollapsibleModuleGroup = memo(function CollapsibleModuleGroup({
 }: CollapsibleModuleGroupProps) {
   const [isExpanded, setIsExpanded] = useState(true)
 
-  const passedCount = cases.filter((c) => c.status === 'passed').length
-  const failedCount = cases.filter((c) => c.status === 'failed').length
-  const skippedCount = cases.filter((c) => c.status === 'skipped').length
+  const { passedCount, failedCount, skippedCount } = useMemo(() => {
+    return {
+      passedCount: cases.filter((c) => c.status === 'passed').length,
+      failedCount: cases.filter((c) => c.status === 'failed').length,
+      skippedCount: cases.filter((c) => c.status === 'skipped').length
+    }
+  }, [cases])
+
+  const toggleExpanded = useCallback(() => {
+    setIsExpanded((prev) => !prev)
+  }, [])
+
+  const handleCaseClick = useCallback((caseResult: TestCaseResult) => {
+    onCaseClick(caseResult)
+  }, [onCaseClick])
 
   return (
     <div className="border border-slate-200 rounded-lg overflow-hidden mb-4">
       {/* Module Header */}
       <button
-        onClick={() => setIsExpanded(!isExpanded)}
+        onClick={toggleExpanded}
         className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 hover:bg-slate-100 transition-colors duration-150"
       >
         <div className="flex items-center gap-3">
@@ -70,7 +82,7 @@ export const CollapsibleModuleGroup = memo(function CollapsibleModuleGroup({
               key={caseResult.id}
               caseResult={caseResult}
               isSelected={selectedCaseId === caseResult.id}
-              onClick={() => onCaseClick(caseResult)}
+              onClick={() => handleCaseClick(caseResult)}
             />
           ))}
         </div>
