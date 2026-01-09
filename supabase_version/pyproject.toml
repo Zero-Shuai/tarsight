@@ -19,6 +19,9 @@ dependencies = [
     "python-dotenv>=1.2.1",
     "pandas>=2.3.3",
     "supabase>=2.0.0",
+    # Enhanced assertion system dependencies
+    "jsonpath-ng>=1.6.0",  # Advanced JSONPath support
+    "jsonschema>=4.20.0",  # JSON Schema validation
 ]
 [[tool.uv.index]]
 url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple/"

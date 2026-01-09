@@ -120,15 +120,12 @@ function ExecutionDetailPageComponent({ execution, testResults: initialResults }
       {/* Header */}
       <div className="sticky top-0 z-20 bg-white border-b border-slate-200 shadow-sm">
         <div className="px-6 py-4">
-          <Link href="/executions">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="mb-2 rounded-lg hover:bg-slate-100"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              返回执行历史
-            </Button>
+          <Link
+            href="/executions"
+            className="inline-flex items-center mb-2 h-9 px-3 text-sm rounded-lg hover:bg-slate-100 text-slate-900 transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            返回执行历史
           </Link>
           <h1 className="text-2xl font-semibold text-slate-900">{execution.execution_name}</h1>
           <p className="text-sm text-slate-500 mt-1">

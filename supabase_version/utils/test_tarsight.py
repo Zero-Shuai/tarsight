@@ -142,91 +142,130 @@ class TestTarsightTable:
         print(f"\n📝 响应详情:")
         print(f"   📊 状态码: {resp.status_code}")
 
-        # 如果有验证规则，执行内容验证
-        validation_rules = test_case.get('validation_rules')
-        if validation_rules:
-            print(f"\n🔍 执行内容验证...")
+        # Enhanced assertions execution (v2.0)
+        assertions_config = test_case.get('assertions')
+        validation_rules = test_case.get('validation_rules')  # Backward compatibility
+
+        if assertions_config or validation_rules:
+            print(f"\n🔍 执行断言验证...")
+
             try:
-                # 尝试解析 JSON 响应
-                response_data = resp.json()
-                print(f"   📄 响应数据: {json.dumps(response_data, indent=2, ensure_ascii=False)[:200]}...")
+                # Parse response data
+                try:
+                    response_body = resp.json()
+                except json.JSONDecodeError:
+                    response_body = resp.text
 
-                # 检查验证规则类型
-                rule_type = validation_rules.get('type', 'json_path')
+                # Prepare response data for assertion engine
+                response_data = {
+                    'status_code': resp.status_code,
+                    'headers': dict(resp.headers),
+                    'body': response_body,
+                    'response_time': response_time
+                }
 
-                if rule_type == 'json_path':
-                    # JSON Path 验证
-                    checks = validation_rules.get('checks', [])
-                    for check in checks:
-                        path = check.get('path')
-                        operator = check.get('operator', 'equals')  # 默认为 equals
-                        expected_value = check.get('value')
+                # Use new assertion engine if available
+                if assertions_config:
+                    from utils.assertion_engine import AssertionEngine
 
-                        # 简单的 JSON Path 实现（支持 $.field 格式）
-                        actual_value = response_data
-                        if path.startswith('$.'):
-                            # 移除 $. 前缀并按点分割
-                            path_parts = path[2:].split('.')
-                            for part in path_parts:
-                                if isinstance(actual_value, dict):
-                                    actual_value = actual_value.get(part)
-                                elif isinstance(actual_value, list) and part.isdigit():
-                                    index = int(part)
-                                    if 0 <= index < len(actual_value):
-                                        actual_value = actual_value[index]
+                    engine = AssertionEngine(
+                        stop_on_failure=assertions_config.get('stopOnFailure', True)
+                    )
+                    all_passed, results = engine.execute_assertions(assertions_config, response_data)
+
+                    # Log results
+                    for result in results:
+                        status_icon = "✅" if result['passed'] else "❌"
+                        print(f"   {status_icon} {result['message']}")
+
+                        if not result['passed']:
+                            if 'actual' in result:
+                                print(f"      实际值: {result['actual']}")
+                            if 'expected' in result:
+                                print(f"      期望值: {result['expected']}")
+
+                    # Fail test if any critical assertion failed
+                    if not all_passed:
+                        failed_assertions = [r for r in results if not r['passed']]
+                        error_messages = [r['message'] for r in failed_assertions]
+                        raise AssertionError(f"断言失败: {'; '.join(error_messages)}")
+
+                else:
+                    # Backward compatibility: use old validation_rules
+                    if validation_rules:
+                        print(f"   ⚠️ 使用旧版验证规则格式，建议升级到新断言系统")
+
+                        # Check if response is JSON
+                        if isinstance(response_body, dict):
+                            rule_type = validation_rules.get('type', 'json_path')
+
+                            if rule_type == 'json_path':
+                                checks = validation_rules.get('checks', [])
+                                for check in checks:
+                                    path = check.get('path')
+                                    operator = check.get('operator', 'equals')
+                                    expected_value = check.get('value')
+
+                                    # Simple JSON Path implementation
+                                    actual_value = response_body
+                                    if path.startswith('$.'):
+                                        path_parts = path[2:].split('.')
+                                        for part in path_parts:
+                                            if isinstance(actual_value, dict):
+                                                actual_value = actual_value.get(part)
+                                            elif isinstance(actual_value, list) and part.isdigit():
+                                                index = int(part)
+                                                if 0 <= index < len(actual_value):
+                                                    actual_value = actual_value[index]
+                                                else:
+                                                    actual_value = None
+                                                    break
+                                            else:
+                                                actual_value = None
+                                                break
+
+                                    assert actual_value is not None, f"JSON Path '{path}' 不存在于响应中"
+
+                                    if operator == 'equals':
+                                        assert actual_value == expected_value, \
+                                            f"验证失败: Path '{path}' - 预期 {expected_value}, 实际 {actual_value}"
+                                        print(f"   ✅ 验证通过: {path} = {actual_value}")
+                                    elif operator == 'contains':
+                                        assert str(expected_value) in str(actual_value), \
+                                            f"验证失败: Path '{path}' - 期望包含 '{expected_value}', 实际 '{actual_value}'"
+                                        print(f"   ✅ 验证通过: {path} 包含 '{expected_value}'")
+                                    elif operator == 'not_contains':
+                                        assert str(expected_value) not in str(actual_value), \
+                                            f"验证失败: Path '{path}' - 期望不包含 '{expected_value}', 但实际包含 '{actual_value}'"
+                                        print(f"   ✅ 验证通过: {path} 不包含 '{expected_value}'")
+                                    elif operator == 'gt':
+                                        assert actual_value > expected_value, \
+                                            f"验证失败: Path '{path}' - 期望大于 {expected_value}, 实际 {actual_value}"
+                                        print(f"   ✅ 验证通过: {path} > {expected_value}")
+                                    elif operator == 'lt':
+                                        assert actual_value < expected_value, \
+                                            f"验证失败: Path '{path}' - 期望小于 {expected_value}, 实际 {actual_value}"
+                                        print(f"   ✅ 验证通过: {path} < {expected_value}")
+                                    elif operator == 'gte':
+                                        assert actual_value >= expected_value, \
+                                            f"验证失败: Path '{path}' - 期望大于等于 {expected_value}, 实际 {actual_value}"
+                                        print(f"   ✅ 验证通过: {path} >= {expected_value}")
+                                    elif operator == 'lte':
+                                        assert actual_value <= expected_value, \
+                                            f"验证失败: Path '{path}' - 期望小于等于 {expected_value}, 实际 {actual_value}"
+                                        print(f"   ✅ 验证通过: {path} <= {expected_value}")
                                     else:
-                                        actual_value = None
-                                        break
-                                else:
-                                    actual_value = None
-                                    break
+                                        assert actual_value == expected_value, \
+                                            f"验证失败: Path '{path}' - 预期 {expected_value}, 实际 {actual_value}"
+                                        print(f"   ✅ 验证通过: {path} = {actual_value}")
 
-                        # 根据操作符执行验证
-                        assert actual_value is not None, f"JSON Path '{path}' 不存在于响应中"
+                print(f"   ✅ 所有断言验证通过")
 
-                        # 执行不同类型的验证
-                        if operator == 'equals':
-                            assert actual_value == expected_value, \
-                                f"验证失败: Path '{path}' - 预期 {expected_value}, 实际 {actual_value}"
-                            print(f"   ✅ 验证通过: {path} = {actual_value}")
-                        elif operator == 'contains':
-                            assert str(expected_value) in str(actual_value), \
-                                f"验证失败: Path '{path}' - 期望包含 '{expected_value}', 实际 '{actual_value}'"
-                            print(f"   ✅ 验证通过: {path} 包含 '{expected_value}'")
-                        elif operator == 'not_contains':
-                            assert str(expected_value) not in str(actual_value), \
-                                f"验证失败: Path '{path}' - 期望不包含 '{expected_value}', 但实际包含 '{actual_value}'"
-                            print(f"   ✅ 验证通过: {path} 不包含 '{expected_value}'")
-                        elif operator == 'gt':
-                            assert actual_value > expected_value, \
-                                f"验证失败: Path '{path}' - 期望大于 {expected_value}, 实际 {actual_value}"
-                            print(f"   ✅ 验证通过: {path} > {expected_value}")
-                        elif operator == 'lt':
-                            assert actual_value < expected_value, \
-                                f"验证失败: Path '{path}' - 期望小于 {expected_value}, 实际 {actual_value}"
-                            print(f"   ✅ 验证通过: {path} < {expected_value}")
-                        elif operator == 'gte':
-                            assert actual_value >= expected_value, \
-                                f"验证失败: Path '{path}' - 期望大于等于 {expected_value}, 实际 {actual_value}"
-                            print(f"   ✅ 验证通过: {path} >= {expected_value}")
-                        elif operator == 'lte':
-                            assert actual_value <= expected_value, \
-                                f"验证失败: Path '{path}' - 期望小于等于 {expected_value}, 实际 {actual_value}"
-                            print(f"   ✅ 验证通过: {path} <= {expected_value}")
-                        else:
-                            # 未知操作符，默认使用 equals
-                            assert actual_value == expected_value, \
-                                f"验证失败: Path '{path}' - 预期 {expected_value}, 实际 {actual_value}"
-                            print(f"   ✅ 验证通过: {path} = {actual_value}")
-
-                print(f"   ✅ 所有内容验证通过")
-            except json.JSONDecodeError as e:
-                print(f"   ⚠️ 响应不是 JSON 格式，跳过内容验证: {e}")
             except AssertionError as e:
-                print(f"   ❌ 内容验证失败: {e}")
+                print(f"   ❌ 断言验证失败: {e}")
                 raise
             except Exception as e:
-                print(f"   ⚠️ 内容验证出错: {e}")
+                print(f"   ⚠️ 断言执行出错: {e}")
                 raise
 
         # 构建响应信息

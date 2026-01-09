@@ -45,16 +45,126 @@ export type TestCase = {
   request_body?: Record<string, any>
   variables?: Record<string, any>
   tags?: string[]
-  assertions?: Assertion[]  // Re-added - will be added via migration 006
-  level?: string  // Made optional - will be added via migration 006
+  assertions?: AssertionsConfig  // Enhanced assertions v2.0
+  validation_rules?: any  // Legacy validation rules (backward compatibility)
+  level?: string
   is_active: boolean
   created_by?: string  // Changed from user_id to match database
   created_at: string
   updated_at?: string
 }
 
-// Assertion Rule Types
-export type Assertion = {
+// ============================================
+// Enhanced Assertion Types (v2.0)
+// ============================================
+
+// Assertion type discriminator
+export type AssertionType =
+  | 'status_code'
+  | 'response_time'
+  | 'header'
+  | 'json_body'
+  | 'json_schema'
+  | 'javascript'
+
+// Assertion operators
+export type AssertionOperator =
+  | 'equals'
+  | 'not_equals'
+  | 'contains'
+  | 'not_contains'
+  | 'gt'
+  | 'lt'
+  | 'gte'
+  | 'lte'
+  | 'regex'
+  | 'type'
+  | 'exists'
+  | 'empty'
+  | 'one_of'
+  | 'length_equals'
+  | 'length_gt'
+  | 'length_lt'
+
+// Assertion target
+export type AssertionTarget = 'status_code' | 'response_time' | 'header' | 'body' | 'full_response'
+
+// Base assertion interface
+export interface BaseAssertion {
+  id: string
+  type: AssertionType
+  enabled: boolean
+  critical: boolean  // If true, stop on failure
+  description?: string
+}
+
+// Status Code Assertion
+export interface StatusCodeAssertion extends BaseAssertion {
+  type: 'status_code'
+  target: 'status_code'
+  operator: 'equals' | 'one_of' | 'gt' | 'lt' | 'gte' | 'lte'
+  expectedValue: number | number[]
+}
+
+// Response Time Assertion
+export interface ResponseTimeAssertion extends BaseAssertion {
+  type: 'response_time'
+  target: 'response_time'
+  operator: 'lt' | 'gt' | 'lte' | 'gte'
+  expectedValue: number  // in milliseconds
+}
+
+// Header Assertion
+export interface HeaderAssertion extends BaseAssertion {
+  type: 'header'
+  target: 'header'
+  headerName: string
+  operator: AssertionOperator
+  expectedValue?: any
+}
+
+// JSON Body Assertion
+export interface JsonBodyAssertion extends BaseAssertion {
+  type: 'json_body'
+  target: 'body'
+  jsonPath: string
+  operator: AssertionOperator
+  expectedValue?: any
+}
+
+// JSON Schema Assertion
+export interface JsonSchemaAssertion extends BaseAssertion {
+  type: 'json_schema'
+  target: 'body'
+  schema: object  // JSON Schema draft-07
+}
+
+// JavaScript Assertion
+export interface JavaScriptAssertion extends BaseAssertion {
+  type: 'javascript'
+  target: 'body' | 'header' | 'full_response'
+  script: string  // JavaScript code
+  timeout?: number  // ms, default 5000
+}
+
+// Union type for all assertions
+export type Assertion =
+  | StatusCodeAssertion
+  | ResponseTimeAssertion
+  | HeaderAssertion
+  | JsonBodyAssertion
+  | JsonSchemaAssertion
+  | JavaScriptAssertion
+
+// Assertions configuration container
+export interface AssertionsConfig {
+  version: string  // "2.0"
+  stopOnFailure: boolean
+  assertions: Assertion[]
+}
+
+// Legacy assertion type (for backward compatibility)
+export interface LegacyAssertion {
   type: 'contains' | 'equals' | 'json_path' | 'regex'
   target: 'body' | 'header'
   value: string
@@ -156,8 +266,9 @@ export type TestCaseResult = {
     request_body?: Record<string, any>
     variables?: Record<string, any>
     tags?: string[]
-    assertions?: Assertion[]  // Re-added - will be added via migration 006
-    level?: string  // Will be added via migration 006
+    assertions?: AssertionsConfig  // Enhanced assertions v2.0
+    validation_rules?: any  // Legacy validation rules
+    level?: string
     is_active: boolean
     created_by?: string
     created_at: string
