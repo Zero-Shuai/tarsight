@@ -1,43 +1,28 @@
-# 数据库迁移文件
+# ⚠️ 已废弃 - 请使用 supabase/migrations/
 
-本目录包含数据库的版本化迁移文件。
+> **重要**: 此目录已废弃，所有数据库迁移已统一到项目根目录的 `supabase/migrations/`。
 
-## 迁移命名规范
+## 新位置
 
-`版本号_描述.sql`
+👉 **统一迁移目录**: [`/supabase/migrations/`](../../../supabase/migrations/)
 
-示例:
-- `001_add_test_results_table.sql`
-- `002_add_performance_indexes.sql`
-- `003_add_notification_system.sql`
+## 详细文档
 
-## 使用方法
+请参阅：[数据库迁移管理指南](../../../docs/database-migrations-guide.md)
 
-### 在Supabase Dashboard中执行
+## 迁移原因
 
-1. 打开Supabase Dashboard
-2. 进入SQL Editor
-3. 复制迁移文件内容
-4. 执行SQL
+1. **统一管理**: Supabase CLI 标准目录
+2. **前后端一致**: 前后端使用同一迁移源
+3. **更好工具支持**: Supabase Dashboard 可视化
 
-### 使用命令行
+## 本目录保留原因
 
-```bash
-# 使用psql执行迁移
-psql -h db.xxx.supabase.co -U postgres -d postgres -f migrations/001_add_test_results_table.sql
-```
+此目录保留用于向后兼容，但**不应再添加新的迁移文件**。
 
-## 迁移历史
+所有新迁移请添加到 `supabase/migrations/` 目录。
 
-当前版本: v2.0
+---
 
-| 版本 | 文件 | 描述 | 日期 |
-|------|------|------|------|
-| 2.0 | (完整schema) | 重构数据库架构 | 2025-12-30 |
-
-## 注意事项
-
-1. **备份数据**: 执行迁移前务必备份数据库
-2. **测试环境**: 先在测试环境验证迁移
-3. **顺序执行**: 按版本号顺序执行迁移
-4. **回滚计划**: 准备回滚脚本以防迁移失败
+**最后更新**: 2025-01-09
+**状态**: ⚠️ 已废弃
