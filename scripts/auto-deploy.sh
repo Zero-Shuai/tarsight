@@ -63,8 +63,8 @@ git branch $BACKUP_BRANCH
 echo -e "${GREEN}✓ Git备份分支: $BACKUP_BRANCH${NC}"
 echo ""
 
-# 3. 处理本地修改（自动放弃）
-echo -e "${YELLOW}[3/7] 清理本地修改...${NC}"
+# 3. 处理本地修改（自动放弃）并拉取最新代码
+echo -e "${YELLOW}[3/7] 清理本地修改并拉取最新代码...${NC}"
 if ! git diff --quiet || ! git diff --cached --quiet; then
     echo -e "${YELLOW}检测到本地修改，自动放弃...${NC}"
     git reset --hard HEAD
@@ -73,6 +73,12 @@ if ! git diff --quiet || ! git diff --cached --quiet; then
 else
     echo -e "${GREEN}✓ 工作目录干净${NC}"
 fi
+
+# 拉取最新代码
+echo -e "${YELLOW}拉取最新代码...${NC}"
+git fetch origin
+git reset --hard origin/master
+echo -e "${GREEN}✓ 已更新到最新代码${NC}"
 echo ""
 
 # 4. 处理类型检查选项
