@@ -44,7 +44,7 @@ export async function GET(request: Request) {
   // Get filtered test cases with anon key (respects RLS)
   const { data: filteredCases, error: filteredError } = await supabase
     .from('test_cases')
-    .select('*')
+    .select('id, case_id, test_name, project_id, is_active, module_id, level')
     .eq('project_id', projectId)
     .limit(10)
 
@@ -57,7 +57,7 @@ export async function GET(request: Request) {
   // Get modules with anon key (respects RLS)
   const { data: modules, error: modulesError } = await supabase
     .from('modules')
-    .select('*')
+    .select('id, name, project_id')
     .eq('project_id', projectId)
     .limit(10)
 

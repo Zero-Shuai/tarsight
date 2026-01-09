@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback, memo } from 'react'
 import { X, CheckCircle2, XCircle, Circle, Copy, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -14,7 +14,7 @@ interface CaseDetailDrawerProps {
   onNavigate: (direction: 'up' | 'down') => void
 }
 
-export function CaseDetailDrawer({ caseResult, allCases, onClose, onNavigate }: CaseDetailDrawerProps) {
+function CaseDetailDrawerComponent({ caseResult, allCases, onClose, onNavigate }: CaseDetailDrawerProps) {
   const [activeTab, setActiveTab] = useState<'request' | 'response'>('response')
   const [copied, setCopied] = useState(false)
 
@@ -69,20 +69,20 @@ export function CaseDetailDrawer({ caseResult, allCases, onClose, onNavigate }: 
   const hasPrevious = currentIndex > 0
   const hasNext = currentIndex < allCases.length - 1
 
-  const statusIcon =
+  const statusIcon = useMemo(() =>
     caseResult.status === 'passed' ? (
       <CheckCircle2 className="h-4 w-4 text-[#10B981]" strokeWidth={2.5} />
     ) : caseResult.status === 'failed' ? (
       <XCircle className="h-4 w-4 text-[#EF4444]" strokeWidth={2.5} />
     ) : (
       <Circle className="h-4 w-4 text-[#F59E0B]" strokeWidth={2.5} />
-    )
+    ), [caseResult.status])
 
-  const copyToClipboard = (text: string) => {
+  const copyToClipboard = useCallback((text: string) => {
     navigator.clipboard.writeText(text)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
-  }
+  }, [])
 
   return (
     <div className="fixed inset-0 z-50 flex">
@@ -373,3 +373,12 @@ export function CaseDetailDrawer({ caseResult, allCases, onClose, onNavigate }: 
     </div>
   )
 }
+
+export const CaseDetailDrawer = memo(CaseDetailDrawerComponent, (prevProps, nextProps) => {
+  return (
+    prevProps.caseResult?.id === nextProps.caseResult?.id &&
+    prevProps.allCases.length === nextProps.allCases.length &&
+    prevProps.onClose === nextProps.onClose &&
+    prevProps.onNavigate === nextProps.onNavigate
+  )
+})

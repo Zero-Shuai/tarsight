@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, memo } from 'react'
+import { useState, memo, useMemo, useCallback } from 'react'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -61,6 +61,18 @@ function getStatusInfo(status: string) {
   }
 }
 
+// 缓存计算统计数据
+function calculateExecutionStats(execution: TestExecution) {
+  const passedTests = execution.passed_tests || 0
+  const failedTests = execution.failed_tests || 0
+  const skippedTests = execution.skipped_tests || 0
+  const executedTests = execution.total_tests - skippedTests
+  const passRate = executedTests > 0
+    ? (passedTests / executedTests) * 100
+    : 0
+  return { passedTests, failedTests, skippedTests, executedTests, passRate }
+}
+
 export const ExecutionListCompact = memo(function ExecutionListCompact({ executions }: ExecutionListCompactProps) {
   const [selectedExecution, setSelectedExecution] = useState<TestExecution | null>(null)
 
@@ -85,15 +97,7 @@ export const ExecutionListCompact = memo(function ExecutionListCompact({ executi
         {/* List Rows */}
         <div className="divide-y divide-slate-50">
           {executions.map((execution) => {
-            // 通过率 = 通过数 / (总数 - 跳过数) * 100
-            // 只计算实际执行的用例（排除跳过的）
-            const passedTests = execution.passed_tests || 0
-            const failedTests = execution.failed_tests || 0
-            const skippedTests = execution.skipped_tests || 0
-            const executedTests = execution.total_tests - skippedTests
-            const passRate = executedTests > 0
-              ? (passedTests / executedTests) * 100
-              : 0
+            const stats = calculateExecutionStats(execution)
             const statusInfo = getStatusInfo(execution.status)
             const StatusIcon = statusInfo.icon
 
@@ -131,17 +135,17 @@ export const ExecutionListCompact = memo(function ExecutionListCompact({ executi
 
                   {/* Pass Count - Centered */}
                   <div className="text-center">
-                    <p className="text-lg font-bold text-[#10B981]">{passedTests}</p>
+                    <p className="text-lg font-bold text-[#10B981]">{stats.passedTests}</p>
                   </div>
 
                   {/* Fail Count - Centered */}
                   <div className="text-center">
-                    <p className="text-lg font-bold text-[#EF4444]">{failedTests}</p>
+                    <p className="text-lg font-bold text-[#EF4444]">{stats.failedTests}</p>
                   </div>
 
                   {/* Skipped Count - Centered */}
                   <div className="text-center">
-                    <p className="text-lg font-bold text-[#F59E0B]">{skippedTests}</p>
+                    <p className="text-lg font-bold text-[#F59E0B]">{stats.skippedTests}</p>
                   </div>
 
                   {/* Success Rate Badge - High contrast pill shape */}
@@ -149,12 +153,12 @@ export const ExecutionListCompact = memo(function ExecutionListCompact({ executi
                     <Badge
                       variant="outline"
                       className={`font-semibold px-3 py-1 rounded-full ${
-                        passRate === 100
+                        stats.passRate === 100
                           ? 'bg-[#DCFCE7] text-[#166534] border-emerald-200'
                           : 'bg-[#FEE2E2] text-[#991B1B] border-rose-200'
                       }`}
                     >
-                      {passRate.toFixed(1)}%
+                      {stats.passRate.toFixed(1)}%
                     </Badge>
                   </div>
                 </div>
