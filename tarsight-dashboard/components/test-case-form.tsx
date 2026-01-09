@@ -9,6 +9,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { X, Plus, Trash2, Sparkles } from 'lucide-react'
 import { supabase as supabaseClient } from '@/lib/supabase/client'
+import { AssertionBuilder } from './assertion-builder'
+import type { AssertionsConfig, Assertion } from '@/lib/types/database'
 
 interface TestCaseFormProps {
   testCase?: any
@@ -25,6 +27,34 @@ const parseJsonField = (field: any) => {
     return JSON.parse(field)
   } catch {
     return {}
+  }
+}
+
+// Migrate legacy validation_rules to new assertions format
+const migrateValidationRulesToAssertions = (validationRules: any): AssertionsConfig => {
+  if (!validationRules || !validationRules.checks || validationRules.checks.length === 0) {
+    return {
+      version: '2.0',
+      stopOnFailure: true,
+      assertions: []
+    }
+  }
+
+  const assertions: Assertion[] = validationRules.checks.map((check: any, index: number) => ({
+    id: crypto.randomUUID(),
+    type: 'json_body',
+    enabled: true,
+    critical: true,
+    target: 'body',
+    jsonPath: check.path,
+    operator: check.operator,
+    expectedValue: check.value
+  }))
+
+  return {
+    version: '2.0',
+    stopOnFailure: true,
+    assertions
   }
 }
 
@@ -47,6 +77,14 @@ export function TestCaseForm({ testCase, modules, onSuccess, onCancel }: TestCas
     level: testCase?.level || 'P2',
     is_active: testCase?.is_active !== undefined ? testCase.is_active : true
   })
+
+  // New assertions config state
+  const [assertionsConfig, setAssertionsConfig] = useState<AssertionsConfig>({
+    version: '2.0',
+    stopOnFailure: true,
+    assertions: []
+  })
+
   const [newTag, setNewTag] = useState('')
   const [previewCaseId, setPreviewCaseId] = useState('')
   const [isLoadingPreview, setIsLoadingPreview] = useState(false)
@@ -79,6 +117,20 @@ export function TestCaseForm({ testCase, modules, onSuccess, onCancel }: TestCas
     fetchPreviewId()
   }, [formData.module_id, testCase])
 
+  // Migrate legacy validation_rules to new assertions format on component mount
+  useEffect(() => {
+    if (testCase) {
+      // Check if we have new assertions format
+      if (testCase.assertions) {
+        setAssertionsConfig(testCase.assertions)
+      } else if (testCase.validation_rules) {
+        // Migrate old validation_rules to new format
+        const migrated = migrateValidationRulesToAssertions(testCase.validation_rules)
+        setAssertionsConfig(migrated)
+      }
+    }
+  }, [testCase])
+
   // 新验证规则的状态
   const [newValidationRule, setNewValidationRule] = useState({
     path: '',
@@ -109,9 +161,16 @@ export function TestCaseForm({ testCase, modules, onSuccess, onCancel }: TestCas
         variables: typeof formData.variables === 'string'
           ? formData.variables
           : (formData.variables ? JSON.stringify(formData.variables) : null),
-        validation_rules: typeof formData.validation_rules === 'string'
-          ? formData.validation_rules
-          : (formData.validation_rules ? JSON.stringify(formData.validation_rules) : null)
+        // Add new assertions format
+        assertions: assertionsConfig.assertions.length > 0
+          ? JSON.stringify(assertionsConfig)
+          : null,
+        // Clear old validation_rules when assertions are present
+        validation_rules: assertionsConfig.assertions.length > 0
+          ? null
+          : (typeof formData.validation_rules === 'string'
+            ? formData.validation_rules
+            : (formData.validation_rules ? JSON.stringify(formData.validation_rules) : null))
       }
 
       const { error } = testCase
@@ -134,7 +193,7 @@ export function TestCaseForm({ testCase, modules, onSuccess, onCancel }: TestCas
     } finally {
       setLoading(false)
     }
-  }, [formData, testCase, onSuccess])
+  }, [formData, testCase, onSuccess, assertionsConfig])
 
   const addTag = useCallback(() => {
     if (newTag && !formData.tags.includes(newTag)) {
@@ -436,104 +495,12 @@ export function TestCaseForm({ testCase, modules, onSuccess, onCancel }: TestCas
             </p>
           </div>
 
-          {/* Validation Rules */}
+          {/* Enhanced Assertions */}
           <div>
-            <Label>验证规则 (Validation Rules - 可选)</Label>
-            <p className="text-xs text-muted-foreground mb-3">
-              用于检查响应内容的字段值。留空则只验证状态码
-            </p>
-
-            {/* 显示已添加的验证规则 */}
-            {formData.validation_rules && formData.validation_rules.checks && formData.validation_rules.checks.length > 0 && (
-              <div className="space-y-2 mb-3">
-                {formData.validation_rules.checks.map((check: any, index: number) => (
-                  <div key={index} className="flex items-center gap-2 p-3 bg-muted rounded-md">
-                    <span className="text-sm font-mono flex-1">
-                      <span className="font-semibold">{check.path}</span>
-                      {' '}
-                      <span className="text-muted-foreground">
-                        {check.operator === 'equals' && '等于'}
-                        {check.operator === 'contains' && '包含'}
-                        {check.operator === 'not_contains' && '不包含'}
-                        {check.operator === 'gt' && '大于'}
-                        {check.operator === 'lt' && '小于'}
-                        {check.operator === 'gte' && '大于等于'}
-                        {check.operator === 'lte' && '小于等于'}
-                      </span>
-                      {' '}
-                      <span className="font-semibold">{String(check.value)}</span>
-                    </span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeValidationRule(index)}
-                      className="h-8 w-8 p-0"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* 添加新的验证规则 */}
-            <div className="grid gap-3 md:grid-cols-4 items-end p-4 border rounded-md bg-muted/50">
-              <div>
-                <Label htmlFor="new_rule_field" className="text-xs">字段路径</Label>
-                <Input
-                  id="new_rule_field"
-                  value={newValidationRule.path}
-                  onChange={(e) => setNewValidationRule({ ...newValidationRule, path: e.target.value })}
-                  placeholder="如: $.code"
-                  className="mt-1"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="new_rule_operator" className="text-xs">操作符</Label>
-                <select
-                  id="new_rule_operator"
-                  value={newValidationRule.operator}
-                  onChange={(e) => setNewValidationRule({ ...newValidationRule, operator: e.target.value })}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1"
-                >
-                  <option value="equals">等于</option>
-                  <option value="contains">包含</option>
-                  <option value="not_contains">不包含</option>
-                  <option value="gt">大于</option>
-                  <option value="lt">小于</option>
-                  <option value="gte">大于等于</option>
-                  <option value="lte">小于等于</option>
-                </select>
-              </div>
-
-              <div>
-                <Label htmlFor="new_rule_value" className="text-xs">期望值</Label>
-                <Input
-                  id="new_rule_value"
-                  value={newValidationRule.value}
-                  onChange={(e) => setNewValidationRule({ ...newValidationRule, value: e.target.value })}
-                  placeholder="如: 200"
-                  className="mt-1"
-                />
-              </div>
-
-              <Button
-                type="button"
-                onClick={addValidationRule}
-                variant="outline"
-                size="default"
-                className="mb-0"
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                添加规则
-              </Button>
-            </div>
-
-            <p className="text-xs text-muted-foreground mt-2">
-              💡 提示：字段路径支持 JSON Path 格式，如 <code className="bg-muted px-1 rounded">$.code</code>、<code className="bg-muted px-1 rounded">$.success</code>、<code className="bg-muted px-1 rounded">$.data.user.id</code>
-            </p>
+            <AssertionBuilder
+              assertionsConfig={assertionsConfig}
+              onChange={setAssertionsConfig}
+            />
           </div>
 
           {/* 标签 */}
