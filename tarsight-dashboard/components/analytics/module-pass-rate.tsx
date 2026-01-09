@@ -3,6 +3,7 @@
 import { memo, useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Target } from 'lucide-react'
+import { getPassRateColor, CARD_STYLES, PASS_RATE_STATUS, COLOR_VALUES } from '@/lib/constants/chart'
 
 interface ModulePassRateProps {
   modulePassRates: Array<{
@@ -12,16 +13,6 @@ interface ModulePassRateProps {
     passedTests: number
     failedTests: number
   }>
-}
-
-// Get color based on pass rate - transitions from red to green
-const getPassRateColor = (rate: number): string => {
-  if (rate >= 95) return '#10B981' // emerald-500 - Excellent
-  if (rate >= 90) return '#22C55E' // green-600 - Very Good
-  if (rate >= 80) return '#84CC16' // lime-500 - Good
-  if (rate >= 70) return '#F59E0B' // amber-500 - Fair
-  if (rate >= 50) return '#FB923C' // orange-400 - Warning
-  return '#EF4444' // red-500 - Critical
 }
 
 // Progress bar row component
@@ -38,7 +29,7 @@ const ProgressBarRow = memo(function ProgressBarRow({ moduleName, passRate, tota
   return (
     <div className="flex items-center gap-4 py-3" style={{ animationDelay: `${index * 50}ms` }}>
       {/* Module name */}
-      <div className="w-28 text-sm font-medium tracking-tight truncate" style={{ color: '#64748B' }}>
+      <div className="w-28 text-sm font-medium tracking-tight truncate" style={{ color: COLOR_VALUES.slate500 }}>
         {moduleName}
       </div>
 
@@ -56,12 +47,12 @@ const ProgressBarRow = memo(function ProgressBarRow({ moduleName, passRate, tota
       </div>
 
       {/* Percentage */}
-      <div className="w-16 text-sm font-bold tracking-tight text-right" style={{ color: '#0F172A' }}>
+      <div className="w-16 text-sm font-bold tracking-tight text-right" style={{ color: COLOR_VALUES.slate900 }}>
         {passRate.toFixed(1)}%
       </div>
 
       {/* Total tests */}
-      <div className="w-16 text-xs text-right" style={{ color: '#94A3B8' }}>
+      <div className="w-16 text-xs text-right" style={{ color: COLOR_VALUES.slate400 }}>
         {totalTests} tests
       </div>
     </div>
@@ -82,13 +73,13 @@ export const ModulePassRate = memo(function ModulePassRate({ modulePassRates }: 
 
   if (!hasData) {
     return (
-      <Card className="bg-white border-0 shadow-xl shadow-slate-200/50 rounded-2xl animate-in fade-in duration-500">
+      <Card className={CARD_STYLES.base}>
         <CardHeader className="pb-4">
           <CardTitle className="flex items-center gap-3 tracking-tight">
             <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: '#F59E0B15' }}>
-              <Target strokeWidth={2.5} className="w-5 h-5" style={{ color: '#F59E0B' }} />
+              <Target strokeWidth={2.5} className="w-5 h-5" style={{ color: COLOR_VALUES.amber500 }} />
             </div>
-            <span style={{ color: '#0F172A' }}>模块通过率</span>
+            <span style={{ color: COLOR_VALUES.slate900 }}>模块通过率</span>
           </CardTitle>
           <CardDescription className="tracking-tight">各模块的测试通过率排名（从低到高）</CardDescription>
         </CardHeader>
@@ -110,29 +101,29 @@ export const ModulePassRate = memo(function ModulePassRate({ modulePassRates }: 
   }
 
   return (
-    <Card className="bg-white border-0 shadow-xl shadow-slate-200/50 rounded-2xl animate-in fade-in duration-500 delay-200">
+    <Card className={CARD_STYLES.delay200}>
       <CardHeader className="pb-4">
         <CardTitle className="flex items-center gap-3 tracking-tight">
           <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: '#F59E0B15' }}>
-            <Target strokeWidth={2.5} className="w-5 h-5" style={{ color: '#F59E0B' }} />
+            <Target strokeWidth={2.5} className="w-5 h-5" style={{ color: COLOR_VALUES.amber500 }} />
           </div>
-          <span style={{ color: '#0F172A' }}>模块通过率</span>
+          <span style={{ color: COLOR_VALUES.slate900 }}>模块通过率</span>
         </CardTitle>
         <CardDescription className="tracking-tight">各模块的测试通过率排名（从低到高）</CardDescription>
       </CardHeader>
       <CardContent>
         {/* Header row */}
-        <div className="flex items-center gap-4 pb-3 mb-2 border-b" style={{ borderColor: '#F1F5F9' }}>
-          <div className="w-28 text-xs font-semibold tracking-tight" style={{ color: '#94A3B8' }}>
+        <div className="flex items-center gap-4 pb-3 mb-2 border-b" style={{ borderColor: COLOR_VALUES.slate100 }}>
+          <div className="w-28 text-xs font-semibold tracking-tight" style={{ color: COLOR_VALUES.slate400 }}>
             模块名称
           </div>
-          <div className="flex-1 text-xs font-semibold tracking-tight" style={{ color: '#94A3B8' }}>
+          <div className="flex-1 text-xs font-semibold tracking-tight" style={{ color: COLOR_VALUES.slate400 }}>
             通过率
           </div>
-          <div className="w-16 text-xs font-semibold tracking-tight text-right" style={{ color: '#94A3B8' }}>
+          <div className="w-16 text-xs font-semibold tracking-tight text-right" style={{ color: COLOR_VALUES.slate400 }}>
             百分比
           </div>
-          <div className="w-16 text-xs font-semibold tracking-tight text-right" style={{ color: '#94A3B8' }}>
+          <div className="w-16 text-xs font-semibold tracking-tight text-right" style={{ color: COLOR_VALUES.slate400 }}>
             测试数
           </div>
         </div>
@@ -151,20 +142,14 @@ export const ModulePassRate = memo(function ModulePassRate({ modulePassRates }: 
         </div>
 
         {/* Legend/Status indicators */}
-        <div className="flex flex-wrap gap-5 mt-6 pt-5 border-t" style={{ borderColor: '#F1F5F9' }}>
-          {[
-            { label: '优秀 (≥95%)', color: '#10B981' },
-            { label: '良好 (90-95%)', color: '#22C55E' },
-            { label: '一般 (80-90%)', color: '#84CC16' },
-            { label: '需关注 (70-80%)', color: '#F59E0B' },
-            { label: '高风险 (<70%)', color: '#EF4444' }
-          ].map((status, index) => (
+        <div className="flex flex-wrap gap-5 mt-6 pt-5 border-t" style={{ borderColor: COLOR_VALUES.slate100 }}>
+          {PASS_RATE_STATUS.map((status, index) => (
             <div key={index} className="flex items-center gap-2">
               <div
                 className="w-2 h-2 rounded-full"
                 style={{ backgroundColor: status.color }}
               />
-              <span className="text-xs font-medium tracking-tight" style={{ color: '#64748B' }}>
+              <span className="text-xs font-medium tracking-tight" style={{ color: COLOR_VALUES.slate500 }}>
                 {status.label}
               </span>
             </div>

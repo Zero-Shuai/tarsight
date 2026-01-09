@@ -1,9 +1,12 @@
 // Clean JSON viewer component with syntax highlighting
+import { memo } from 'react'
+import { COLOR_VALUES } from '@/lib/constants/chart'
+
 interface JsonViewerProps {
   data: any
 }
 
-export function JsonViewer({ data }: JsonViewerProps) {
+function JsonViewerComponent({ data }: JsonViewerProps) {
   if (!data) return <span className="text-slate-400 italic">null</span>
 
   try {
@@ -34,7 +37,7 @@ function HighlightJsonLine({ line }: { line: string }) {
   // Highlight keys (before colon)
   highlighted = highlighted.replace(
     /(".*?")\s*:/g,
-    '<span class="text-[#8B5CF6]">$1</span><span class="text-slate-500">:</span>'
+    `<span class="text-[#8B5CF6]">$1</span><span class="text-slate-500">:</span>`
   )
 
   // Highlight string values (after colon)
@@ -57,3 +60,5 @@ function HighlightJsonLine({ line }: { line: string }) {
 
   return <span dangerouslySetInnerHTML={{ __html: highlighted }} />
 }
+
+export const JsonViewer = memo(JsonViewerComponent)

@@ -10,25 +10,12 @@ import {
   Tooltip
 } from 'recharts'
 import { PieChart as PieChartIcon } from 'lucide-react'
+import { CHART_COLORS, CARD_STYLES, COLOR_VALUES } from '@/lib/constants/chart'
 
 interface ModuleDistributionProps {
   moduleTestCaseCount: Record<string, number>
   totalTestCases: number
 }
-
-// Color palette for modules
-const COLORS = [
-  '#3B82F6', // blue-500
-  '#10B981', // emerald-500
-  '#F59E0B', // amber-500
-  '#8B5CF6', // violet-500
-  '#EC4899', // pink-500
-  '#06B6D4', // cyan-500
-  '#6366F1', // indigo-500
-  '#14B8A6', // teal-500
-  '#F97316', // orange-500
-  '#84CC16', // lime-500
-]
 
 // Memoized custom tooltip
 const CustomTooltip = memo(function CustomTooltip({ active, payload }: any) {
@@ -102,7 +89,7 @@ export const ModuleDistribution = memo(function ModuleDistribution({
         moduleName,
         count,
         percentage: totalTestCases > 0 ? (count / totalTestCases) * 100 : 0,
-        color: COLORS[index % COLORS.length]
+        color: CHART_COLORS[index % CHART_COLORS.length]
       }))
       .sort((a, b) => b.count - a.count)
   }, [moduleTestCaseCount, totalTestCases])
@@ -111,13 +98,13 @@ export const ModuleDistribution = memo(function ModuleDistribution({
 
   if (!hasData) {
     return (
-      <Card className="bg-white border-0 shadow-xl shadow-slate-200/50 rounded-2xl animate-in fade-in duration-500">
+      <Card className={CARD_STYLES.base}>
         <CardHeader className="pb-4">
           <CardTitle className="flex items-center gap-3 tracking-tight">
             <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: '#8B5CF615' }}>
-              <PieChartIcon strokeWidth={2.5} className="w-5 h-5" style={{ color: '#8B5CF6' }} />
+              <PieChartIcon strokeWidth={2.5} className="w-5 h-5" style={{ color: COLOR_VALUES.violet500 }} />
             </div>
-            <span style={{ color: '#0F172A' }}>模块分布</span>
+            <span style={{ color: COLOR_VALUES.slate900 }}>模块分布</span>
           </CardTitle>
           <CardDescription className="tracking-tight">各模块的测试用例分布</CardDescription>
         </CardHeader>
@@ -139,13 +126,13 @@ export const ModuleDistribution = memo(function ModuleDistribution({
   }
 
   return (
-    <Card className="bg-white border-0 shadow-xl shadow-slate-200/50 rounded-2xl animate-in fade-in duration-500 delay-100">
+    <Card className={CARD_STYLES.delay100}>
       <CardHeader className="pb-4">
         <CardTitle className="flex items-center gap-3 tracking-tight">
           <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: '#8B5CF615' }}>
-            <PieChartIcon strokeWidth={2.5} className="w-5 h-5" style={{ color: '#8B5CF6' }} />
+            <PieChartIcon strokeWidth={2.5} className="w-5 h-5" style={{ color: COLOR_VALUES.violet500 }} />
           </div>
-          <span style={{ color: '#0F172A' }}>模块分布</span>
+          <span style={{ color: COLOR_VALUES.slate900 }}>模块分布</span>
         </CardTitle>
         <CardDescription className="tracking-tight">各模块的测试用例分布</CardDescription>
       </CardHeader>
