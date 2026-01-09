@@ -15,6 +15,10 @@ from dotenv import load_dotenv
 
 logger = logging.getLogger(__name__)
 
+# 全局配置缓存（单例模式）
+_global_config: Optional['EnvConfig'] = None
+_config_cache: Dict[str, Any] = {}
+
 
 class EnvConfig:
     """
@@ -120,61 +124,57 @@ class EnvConfig:
 
     @property
     def supabase_url(self) -> str:
-        """Supabase API URL"""
+        """Supabase API URL（带缓存）"""
+        cache_key = 'supabase_url'
+        if cache_key in _config_cache:
+            return _config_cache[cache_key]
         url = self.get('SUPABASE_URL')
         if not url:
             raise ValueError("❌ 环境变量 SUPABASE_URL 未设置")
+        _config_cache[cache_key] = url
         return url
 
     @property
     def supabase_anon_key(self) -> str:
-        """Supabase Anonymous Key"""
+        """Supabase Anonymous Key（带缓存）"""
+        cache_key = 'supabase_anon_key'
+        if cache_key in _config_cache:
+            return _config_cache[cache_key]
         key = self.get('SUPABASE_ANON_KEY')
         if not key:
             raise ValueError("❌ 环境变量 SUPABASE_ANON_KEY 未设置")
+        _config_cache[cache_key] = key
         return key
 
     @property
     def supabase_service_role_key(self) -> Optional[str]:
-        """Supabase Service Role Key (可选，用于管理员操作)"""
-        return self.get('SUPABASE_SERVICE_ROLE_KEY')
-
-    # ==================== 测试配置 ====================
-
-    @property
-    def data_source(self) -> str:
-        """测试数据源: 'csv' 或 'supabase'"""
-        return self.get('DATA_SOURCE', 'csv')
-
-    @property
-    def target_module(self) -> Optional[str]:
-        """目标测试模块（用于单模块测试）"""
-        return self.get('TARGET_MODULE')
-
-    @property
-    def json_recording(self) -> bool:
-        """是否启用 JSON 结果记录"""
-        return self.get_bool('JSON_RECORDING', False)
-
-    @property
-    def json_results_file(self) -> Optional[str]:
-        """JSON 结果文件路径"""
-        return self.get('TARSIGHT_JSON_RESULTS_FILE')
-
-    @property
-    def execution_name(self) -> Optional[str]:
-        """测试执行名称"""
-        return self.get('EXECUTION_NAME')
+        """Supabase Service Role Key (可选，用于管理员操作)（带缓存）"""
+        cache_key = 'supabase_service_role_key'
+        if cache_key in _config_cache:
+            return _config_cache[cache_key]
+        value = self.get('SUPABASE_SERVICE_ROLE_KEY')
+        _config_cache[cache_key] = value
+        return value
 
     @property
     def base_url(self) -> str:
-        """API 基础 URL"""
-        return self.get('BASE_URL', 'https://t-stream-iq.tarsv.com')
+        """API 基础 URL（带缓存）"""
+        cache_key = 'base_url'
+        if cache_key in _config_cache:
+            return _config_cache[cache_key]
+        value = self.get('BASE_URL', 'https://t-stream-iq.tarsv.com')
+        _config_cache[cache_key] = value
+        return value
 
     @property
     def api_token(self) -> str:
-        """API Token"""
-        return self.get('API_TOKEN', '')
+        """API Token（带缓存）"""
+        cache_key = 'api_token'
+        if cache_key in _config_cache:
+            return _config_cache[cache_key]
+        value = self.get('API_TOKEN', '')
+        _config_cache[cache_key] = value
+        return value
 
     # ==================== 日志配置 ====================
 

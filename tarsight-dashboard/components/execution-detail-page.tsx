@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useState, useMemo, useEffect, useCallback, memo } from 'react'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -17,7 +17,7 @@ interface ExecutionDetailPageProps {
   testResults: TestCaseResult[]
 }
 
-export function ExecutionDetailPage({ execution, testResults: initialResults }: ExecutionDetailPageProps) {
+function ExecutionDetailPageComponent({ execution, testResults: initialResults }: ExecutionDetailPageProps) {
   // Filter states
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'passed' | 'failed' | 'skipped'>('all')
@@ -80,11 +80,11 @@ export function ExecutionDetailPage({ execution, testResults: initialResults }: 
 
   const hasActiveFilters = searchQuery !== '' || statusFilter !== 'all' || selectedModule !== 'all'
 
-  const handleClearFilters = () => {
+  const handleClearFilters = useCallback(() => {
     setSearchQuery('')
     setStatusFilter('all')
     setSelectedModule('all')
-  }
+  }, [])
 
   const handleCaseNavigate = useCallback((direction: 'up' | 'down') => {
     if (!selectedCase) return
@@ -197,6 +197,8 @@ export function ExecutionDetailPage({ execution, testResults: initialResults }: 
     </div>
   )
 }
+
+export const ExecutionDetailPage = memo(ExecutionDetailPageComponent)
 
 // Loading wrapper component
 export function ExecutionDetailPageWrapper() {

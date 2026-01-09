@@ -7,6 +7,11 @@ import { NextResponse } from 'next/server'
  * 自动生成测试用例编号
  * 格式: PRJ001-MOD001-001
  */
+
+// 简单的内存缓存，用于存储模块的最大序号
+const sequenceCache = new Map<string, { sequence: number; timestamp: number }>()
+const CACHE_TTL = 5 * 60 * 1000 // 5分钟缓存
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
@@ -53,20 +58,42 @@ export async function GET(request: Request) {
       )
     }
 
-    // 获取当前模块下最大的序号
-    const { data: lastCase } = await supabase
-      .from('test_cases')
-      .select('case_id')
-      .eq('module_id', moduleId)
-      .order('case_id', { ascending: false })
-      .limit(1)
-
+    // 获取当前模块下最大的序号（带缓存）
     let nextSeq = 1
-    if (lastCase && lastCase.length > 0 && lastCase[0].case_id) {
-      // 从 case_id 中提取序号部分（格式：PRJ001-MOD001-序号）
-      const match = lastCase[0].case_id.match(/-(\d{3})$/)
-      if (match) {
-        nextSeq = parseInt(match[1], 10) + 1
+    const cacheKey = `seq_${moduleId}`
+    const cached = sequenceCache.get(cacheKey)
+
+    // 检查缓存是否有效
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+      nextSeq = cached.sequence + 1
+    } else {
+      // 缓存失效或不存在，查询数据库
+      const { data: lastCase } = await supabase
+        .from('test_cases')
+        .select('case_id')
+        .eq('module_id', moduleId)
+        .order('case_id', { ascending: false })
+        .limit(1)
+
+      if (lastCase && lastCase.length > 0 && lastCase[0].case_id) {
+        // 从 case_id 中提取序号部分（格式：PRJ001-MOD001-序号）
+        const match = lastCase[0].case_id.match(/-(\d{3})$/)
+        if (match) {
+          nextSeq = parseInt(match[1], 10) + 1
+        }
+      }
+    }
+
+    // 更新缓存
+    sequenceCache.set(cacheKey, { sequence: nextSeq, timestamp: Date.now() })
+
+    // 清理过期缓存（保留最近100条）
+    if (sequenceCache.size > 100) {
+      const now = Date.now()
+      for (const [key, value] of sequenceCache.entries()) {
+        if (now - value.timestamp > CACHE_TTL) {
+          sequenceCache.delete(key)
+        }
       }
     }
 

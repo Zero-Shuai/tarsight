@@ -1,5 +1,6 @@
 'use client'
 
+import { memo } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
@@ -50,9 +51,9 @@ const navItems = [
     href: '/projects',
     icon: Key,
   },
-]
+] as const
 
-export function Sidebar() {
+function SidebarComponent() {
   const pathname = usePathname()
 
   return (
@@ -104,3 +105,5 @@ export function Sidebar() {
     </div>
   )
 }
+
+export const Sidebar = memo(SidebarComponent)
