@@ -114,7 +114,8 @@ export function AssertionBuilder({ assertionsConfig, onChange }: AssertionBuilde
         assertion = {
           ...baseAssertion,
           type: 'header',
-          target: 'Content-Type',
+          target: 'header',
+          headerName: 'Content-Type',
           operator: 'contains',
           expectedValue: 'application/json'
         } as Assertion
@@ -165,7 +166,7 @@ export function AssertionBuilder({ assertionsConfig, onChange }: AssertionBuilde
 
   const updateAssertion = (index: number, updates: Partial<Assertion>) => {
     const newAssertions = [...assertionsConfig.assertions]
-    newAssertions[index] = { ...newAssertions[index], ...updates }
+    newAssertions[index] = { ...newAssertions[index], ...updates } as Assertion
     onChange({
       ...assertionsConfig,
       assertions: newAssertions
@@ -239,7 +240,7 @@ export function AssertionBuilder({ assertionsConfig, onChange }: AssertionBuilde
               <Label className="text-xs">期望值</Label>
               <Input
                 type="number"
-                value={assertion.expectedValue}
+                value={Array.isArray(assertion.expectedValue) ? assertion.expectedValue[0] ?? '' : assertion.expectedValue}
                 onChange={(e) => updateAssertion(index, { expectedValue: parseInt(e.target.value) })}
                 className="h-8"
               />
@@ -282,8 +283,8 @@ export function AssertionBuilder({ assertionsConfig, onChange }: AssertionBuilde
             <div>
               <Label className="text-xs">响应头名称</Label>
               <Input
-                value={assertion.target}
-                onChange={(e) => updateAssertion(index, { target: e.target.value })}
+                value={assertion.headerName}
+                onChange={(e) => updateAssertion(index, { headerName: e.target.value })}
                 placeholder="Content-Type"
                 className="h-8"
               />
@@ -368,7 +369,7 @@ export function AssertionBuilder({ assertionsConfig, onChange }: AssertionBuilde
                     const schema = JSON.parse(e.target.value)
                     updateAssertion(index, { schema })
                   } catch {
-                    updateAssertion(index, { schema: e.target.value })
+                    // Keep the last valid schema until the input becomes valid JSON again.
                   }
                 }}
                 placeholder='{\n  "type": "object",\n  "required": ["id", "name"]\n}'
