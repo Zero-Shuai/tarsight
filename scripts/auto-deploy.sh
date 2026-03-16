@@ -179,6 +179,10 @@ if docker ps | grep -q tarsight-frontend; then
     HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:${FRONTEND_PORT}/healthz" || echo "000")
     if [ "$HTTP_CODE" = "200" ]; then
         echo -e "${GREEN}✓ 健康检查接口响应正常 (HTTP ${HTTP_CODE})${NC}"
+        DEPLOYED_VERSION=$(curl -fsS "http://127.0.0.1:${FRONTEND_PORT}/api/version" 2>/dev/null || true)
+        if [ -n "${DEPLOYED_VERSION}" ]; then
+            echo -e "${GREEN}✓ 当前线上版本: ${DEPLOYED_VERSION}${NC}"
+        fi
     else
         echo -e "${YELLOW}⚠ 健康检查接口响应异常 (HTTP ${HTTP_CODE})${NC}"
     fi
