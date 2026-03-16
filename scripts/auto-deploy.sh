@@ -22,13 +22,11 @@ NO_LINT=false
 TARGET_REF="origin/master"
 FRONTEND_PORT="25380"
 BUILD_LOG=""
+NEXT_BUILD_ARGS=""
 
 rollback() {
     echo -e "${YELLOW}自动回滚到 ${PRE_DEPLOY_REF}...${NC}"
     git reset --hard "$PRE_DEPLOY_REF"
-    if [ -f "frontend/package.json.bak" ]; then
-        mv frontend/package.json.bak frontend/package.json
-    fi
     docker compose build frontend
     docker compose up -d frontend --no-deps --force-recreate
     echo -e "${GREEN}✓ 已回滚到部署前版本${NC}"
@@ -55,6 +53,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         --no-lint)
             NO_LINT=true
+            NEXT_BUILD_ARGS="--no-lint"
             shift
             ;;
         *)
@@ -84,6 +83,7 @@ fi
 cd "$PROJECT_DIR"
 echo -e "${GREEN}✓ 项目目录: $PROJECT_DIR${NC}"
 git config core.autocrlf false
+git config core.safecrlf false
 if [ -f ".env" ]; then
     set -a
     source <(sed 's/\r$//' ".env")
@@ -114,7 +114,7 @@ echo ""
 
 # 3. 处理本地修改（自动放弃）并拉取最新代码
 echo -e "${YELLOW}[3/7] 清理本地修改并拉取最新代码...${NC}"
-if ! git diff --quiet || ! git diff --cached --quiet; then
+if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
     echo -e "${YELLOW}检测到本地修改，自动放弃...${NC}"
     git reset --hard HEAD
     git clean -fd
@@ -130,18 +130,11 @@ git reset --hard "$TARGET_REF"
 echo -e "${GREEN}✓ 已更新到目标版本: $(git rev-parse HEAD)${NC}"
 echo ""
 
-# 4. 处理类型检查选项
+# 4. 处理构建选项
 if [ "$NO_LINT" = true ]; then
-    echo -e "${YELLOW}[4/7] 临时禁用类型检查...${NC}"
-    if [ -f "frontend/package.json" ]; then
-        # 备份原文件
-        cp frontend/package.json frontend/package.json.bak
-        # 修改build命令添加--no-lint
-        sed -i 's/"build": "next build"/"build": "next build --no-lint"/' frontend/package.json
-        echo -e "${GREEN}✓ 已临时禁用类型检查${NC}"
-    fi
+    echo -e "${YELLOW}[4/7] 使用 --no-lint 构建参数${NC}"
 else
-    echo -e "${YELLOW}[4/7] 跳过类型检查修改${NC}"
+    echo -e "${YELLOW}[4/7] 使用默认构建参数${NC}"
 fi
 echo ""
 
@@ -151,7 +144,7 @@ echo -e "开始时间: $(date)"
 mkdir -p "$TMP_ROOT"
 BUILD_LOG=$(mktemp "${TMP_ROOT}/auto-build.XXXXXX.log")
 
-if docker compose build --no-cache frontend > "${BUILD_LOG}" 2>&1; then
+if NEXT_BUILD_ARGS="${NEXT_BUILD_ARGS}" docker compose build --no-cache frontend > "${BUILD_LOG}" 2>&1; then
     echo -e "${GREEN}✓ 镜像构建成功${NC}"
 else
     echo -e "${RED}❌ 镜像构建失败${NC}"
@@ -167,9 +160,6 @@ echo ""
 echo -e "${YELLOW}[6/7] 重启容器...${NC}"
 docker compose stop frontend
 docker compose up -d frontend --no-deps --force-recreate
-if [ -f "frontend/package.json.bak" ]; then
-    mv frontend/package.json.bak frontend/package.json
-fi
 echo -e "${GREEN}✓ 容器已重启${NC}"
 echo ""
 

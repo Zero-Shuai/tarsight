@@ -16,6 +16,7 @@ services:
         - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
         - NEXT_PUBLIC_PROJECT_ID=${NEXT_PUBLIC_PROJECT_ID}
         - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+        - NEXT_BUILD_ARGS=${NEXT_BUILD_ARGS:-}
     container_name: tarsight-frontend
     restart: unless-stopped
     ports:

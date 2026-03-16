@@ -11,7 +11,15 @@ RUN npm config set registry https://registry.npmmirror.com && \
     npm config set fetch-retries 5 && \
     npm config set fetch-retry-mintimeout 20000 && \
     npm config set fetch-retry-maxtimeout 120000 && \
-    npm ci
+    for attempt in 1 2 3; do \
+      npm ci && test -x node_modules/.bin/next && exit 0; \
+      echo "npm ci failed on attempt ${attempt}, retrying..."; \
+      rm -rf node_modules; \
+      npm cache clean --force; \
+      sleep 5; \
+    done; \
+    echo "npm ci failed after 3 attempts"; \
+    exit 1
 
 # Copy the current frontend source tree.
 COPY frontend/ ./
@@ -20,13 +28,14 @@ ARG NEXT_PUBLIC_SUPABASE_URL
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
 ARG NEXT_PUBLIC_PROJECT_ID
 ARG SUPABASE_SERVICE_ROLE_KEY
+ARG NEXT_BUILD_ARGS
 
 ENV NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
 ENV NEXT_PUBLIC_PROJECT_ID=${NEXT_PUBLIC_PROJECT_ID}
 ENV SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
 
-RUN npm run build
+RUN npm run build -- ${NEXT_BUILD_ARGS}
 
 # Runtime stage
 FROM node:20-alpine AS runner
