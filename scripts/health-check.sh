@@ -11,6 +11,8 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 VERBOSE=false
+PROJECT_DIR="/opt/tarsight"
+FRONTEND_PORT="25380"
 
 # 解析命令行参数
 while [[ $# -gt 0 ]]; do
@@ -34,6 +36,13 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
+
+if [ -f "${PROJECT_DIR}/.env" ]; then
+    set -a
+    source "${PROJECT_DIR}/.env"
+    set +a
+fi
+FRONTEND_PORT="${FRONTEND_PORT:-25380}"
 
 echo -e "${BLUE}========================================${NC}"
 echo -e "${BLUE}  Tarsight 服务健康检查 v2.0${NC}"
@@ -109,21 +118,23 @@ fi
 
 # 4. 检查端口监听
 echo -e "${YELLOW}[4/9] 检查端口监听...${NC}"
-if netstat -tulpn 2>/dev/null | grep -q :3000; then
-    echo -e "${GREEN}✓ 端口3000正在监听${NC}"
+if netstat -tulpn 2>/dev/null | grep -q "127.0.0.1:${FRONTEND_PORT}"; then
+    echo -e "${GREEN}✓ 端口127.0.0.1:${FRONTEND_PORT}正在监听${NC}"
+elif netstat -tulpn 2>/dev/null | grep -q ":${FRONTEND_PORT}"; then
+    echo -e "${GREEN}✓ 端口${FRONTEND_PORT}正在监听${NC}"
 else
-    echo -e "${RED}✗ 端口3000未监听${NC}"
+    echo -e "${RED}✗ 端口${FRONTEND_PORT}未监听${NC}"
     ERRORS=$((ERRORS+1))
 fi
 
 # 5. 检查HTTP响应
 echo -e "${YELLOW}[5/9] 检查HTTP响应...${NC}"
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 2>/dev/null || echo "000")
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:${FRONTEND_PORT}" 2>/dev/null || echo "000")
 if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "304" ] || [ "$HTTP_CODE" = "307" ]; then
     echo -e "${GREEN}✓ Web服务响应正常 (HTTP $HTTP_CODE)${NC}"
 
     # 测试响应时间
-    RESPONSE_TIME=$(curl -o /dev/null -s -w "%{time_total}" http://localhost:3000 2>/dev/null || echo "0")
+    RESPONSE_TIME=$(curl -o /dev/null -s -w "%{time_total}" "http://127.0.0.1:${FRONTEND_PORT}" 2>/dev/null || echo "0")
     echo "  响应时间: ${RESPONSE_TIME}s"
 
     # 检查响应时间是否合理

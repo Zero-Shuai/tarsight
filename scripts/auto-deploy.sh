@@ -18,6 +18,7 @@ BACKUP_DATE=$(date +%Y%m%d_%H%M%S)
 BACKUP_DIR="/opt/tarsight_backup_${BACKUP_DATE}"
 NO_LINT=false
 TARGET_REF="origin/master"
+FRONTEND_PORT="25380"
 
 # 解析命令行参数
 while [[ $# -gt 0 ]]; do
@@ -60,6 +61,12 @@ fi
 
 cd "$PROJECT_DIR"
 echo -e "${GREEN}✓ 项目目录: $PROJECT_DIR${NC}"
+if [ -f ".env" ]; then
+    set -a
+    source ".env"
+    set +a
+fi
+FRONTEND_PORT="${FRONTEND_PORT:-25380}"
 PRE_DEPLOY_REF=$(git rev-parse HEAD)
 echo -e "${GREEN}✓ 当前版本: ${PRE_DEPLOY_REF}${NC}"
 
@@ -151,7 +158,7 @@ sleep 60
 if docker ps | grep -q tarsight-frontend; then
     echo -e "${GREEN}✓ 容器正在运行${NC}"
 
-    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 || echo "000")
+    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:${FRONTEND_PORT}" || echo "000")
     if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "304" ] || [ "$HTTP_CODE" = "307" ]; then
         echo -e "${GREEN}✓ Web服务响应正常 (HTTP ${HTTP_CODE})${NC}"
     else

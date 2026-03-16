@@ -260,10 +260,12 @@ if [ "$SKIP_HEALTH_CHECK" = false ]; then
         if docker ps | grep -q tarsight-frontend; then
             echo -e "${GREEN}✓ 容器正在运行${NC}"
 
-            if curl -f -s http://localhost:3000 > /dev/null; then
-                echo -e "${GREEN}✓ Web服务响应正常${NC}"
+            FRONTEND_PORT="${FRONTEND_PORT:-25380}"
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:${FRONTEND_PORT}" || echo "000")
+            if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "304" ] || [ "$HTTP_CODE" = "307" ]; then
+                echo -e "${GREEN}✓ Web服务响应正常 (HTTP ${HTTP_CODE})${NC}"
             else
-                echo -e "${YELLOW}⚠ Web服务响应测试失败，请手动检查${NC}"
+                echo -e "${YELLOW}⚠ Web服务响应测试失败 (HTTP ${HTTP_CODE})，请手动检查${NC}"
             fi
         else
             echo -e "${RED}❌ 容器启动失败${NC}"

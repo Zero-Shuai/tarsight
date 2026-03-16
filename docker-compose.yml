@@ -19,7 +19,7 @@ services:
     container_name: tarsight-frontend
     restart: unless-stopped
     ports:
-      - "${FRONTEND_PORT:-3000}:3000"
+      - "127.0.0.1:${FRONTEND_PORT:-25380}:3000"
     environment:
       - NODE_ENV=production
       # 运行时环境变量
