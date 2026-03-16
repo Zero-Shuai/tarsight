@@ -129,12 +129,12 @@ fi
 
 # 5. 检查HTTP响应
 echo -e "${YELLOW}[5/9] 检查HTTP响应...${NC}"
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:${FRONTEND_PORT}/api/health" 2>/dev/null || echo "000")
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:${FRONTEND_PORT}/healthz" 2>/dev/null || echo "000")
 if [ "$HTTP_CODE" = "200" ]; then
     echo -e "${GREEN}✓ Web服务响应正常 (HTTP $HTTP_CODE)${NC}"
 
     # 测试响应时间
-    RESPONSE_TIME=$(curl -o /dev/null -s -w "%{time_total}" "http://127.0.0.1:${FRONTEND_PORT}/api/health" 2>/dev/null || echo "0")
+    RESPONSE_TIME=$(curl -o /dev/null -s -w "%{time_total}" "http://127.0.0.1:${FRONTEND_PORT}/healthz" 2>/dev/null || echo "0")
     echo "  响应时间: ${RESPONSE_TIME}s"
 
     # 检查响应时间是否合理

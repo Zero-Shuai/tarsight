@@ -4,6 +4,13 @@ on:
   push:
     branches:
       - master
+    paths:
+      - '.github/workflows/deploy-production.yml'
+      - 'docker-compose.yml'
+      - 'docker-compose.env.example'
+      - 'frontend/**'
+      - 'backend/**'
+      - 'scripts/**'
   workflow_dispatch:
 
 concurrency:

@@ -176,7 +176,7 @@ sleep 60
 if docker ps | grep -q tarsight-frontend; then
     echo -e "${GREEN}✓ 容器正在运行${NC}"
 
-    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:${FRONTEND_PORT}/api/health" || echo "000")
+    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:${FRONTEND_PORT}/healthz" || echo "000")
     if [ "$HTTP_CODE" = "200" ]; then
         echo -e "${GREEN}✓ 健康检查接口响应正常 (HTTP ${HTTP_CODE})${NC}"
     else
