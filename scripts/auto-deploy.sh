@@ -15,11 +15,13 @@ NC='\033[0m' # No Color
 # 配置
 PROJECT_DIR="/opt/tarsight"
 BACKUP_DATE=$(date +%Y%m%d_%H%M%S)
-BACKUP_ROOT="${PROJECT_DIR}/.deploy-backups"
+BACKUP_ROOT="/opt/tarsight-deploy-backups"
 BACKUP_DIR="${BACKUP_ROOT}/${BACKUP_DATE}"
+TMP_ROOT="/opt/tarsight-deploy-tmp"
 NO_LINT=false
 TARGET_REF="origin/master"
 FRONTEND_PORT="25380"
+BUILD_LOG=""
 
 rollback() {
     echo -e "${YELLOW}自动回滚到 ${PRE_DEPLOY_REF}...${NC}"
@@ -31,6 +33,14 @@ rollback() {
     docker compose up -d frontend --no-deps --force-recreate
     echo -e "${GREEN}✓ 已回滚到部署前版本${NC}"
 }
+
+cleanup() {
+    if [ -n "${BUILD_LOG}" ] && [ -f "${BUILD_LOG}" ]; then
+        rm -f "${BUILD_LOG}"
+    fi
+}
+
+trap cleanup EXIT
 
 # 解析命令行参数
 while [[ $# -gt 0 ]]; do
@@ -73,6 +83,7 @@ fi
 
 cd "$PROJECT_DIR"
 echo -e "${GREEN}✓ 项目目录: $PROJECT_DIR${NC}"
+git config core.autocrlf false
 if [ -f ".env" ]; then
     set -a
     source <(sed 's/\r$//' ".env")
@@ -137,13 +148,15 @@ echo ""
 # 5. 构建新镜像
 echo -e "${YELLOW}[5/7] 构建 Docker 镜像...${NC}"
 echo -e "开始时间: $(date)"
+mkdir -p "$TMP_ROOT"
+BUILD_LOG=$(mktemp "${TMP_ROOT}/auto-build.XXXXXX.log")
 
-if docker compose build --no-cache frontend > /tmp/auto-build.log 2>&1; then
+if docker compose build --no-cache frontend > "${BUILD_LOG}" 2>&1; then
     echo -e "${GREEN}✓ 镜像构建成功${NC}"
 else
     echo -e "${RED}❌ 镜像构建失败${NC}"
     echo -e "${YELLOW}构建错误日志:${NC}"
-    tail -50 /tmp/auto-build.log
+    tail -50 "${BUILD_LOG}"
 
     rollback
     exit 1

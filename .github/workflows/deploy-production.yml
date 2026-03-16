@@ -47,6 +47,8 @@ jobs:
 
             echo -e "${YELLOW}统一部署目录权限...${NC}"
             sudo chown -R "$(id -un)":"$(id -gn)" /opt/tarsight
+            sudo mkdir -p /opt/tarsight-deploy-backups /opt/tarsight-deploy-tmp
+            sudo chown -R "$(id -un)":"$(id -gn)" /opt/tarsight-deploy-backups /opt/tarsight-deploy-tmp
 
             echo -e "${YELLOW}同步服务器代码到目标版本...${NC}"
             git -C /opt/tarsight fetch origin "${{ github.sha }}"
