@@ -39,7 +39,7 @@ done
 
 if [ -f "${PROJECT_DIR}/.env" ]; then
     set -a
-    source "${PROJECT_DIR}/.env"
+    source <(sed 's/\r$//' "${PROJECT_DIR}/.env")
     set +a
 fi
 FRONTEND_PORT="${FRONTEND_PORT:-25380}"

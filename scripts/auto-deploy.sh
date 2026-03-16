@@ -63,7 +63,7 @@ cd "$PROJECT_DIR"
 echo -e "${GREEN}✓ 项目目录: $PROJECT_DIR${NC}"
 if [ -f ".env" ]; then
     set -a
-    source ".env"
+    source <(sed 's/\r$//' ".env")
     set +a
 fi
 FRONTEND_PORT="${FRONTEND_PORT:-25380}"
