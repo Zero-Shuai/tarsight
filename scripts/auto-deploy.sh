@@ -1,7 +1,7 @@
 #!/bin/bash
 # Tarsight 自动化部署脚本（GitHub Actions 专用）
 # 用途：非交互式自动部署，由 GitHub Actions 调用
-# 使用方法: sudo bash scripts/auto-deploy.sh [--ref <git-ref>] [--no-lint]
+# 使用方法: bash scripts/auto-deploy.sh [--ref <git-ref>] [--no-lint]
 
 set -euo pipefail  # 遇到错误立即退出
 
@@ -15,10 +15,22 @@ NC='\033[0m' # No Color
 # 配置
 PROJECT_DIR="/opt/tarsight"
 BACKUP_DATE=$(date +%Y%m%d_%H%M%S)
-BACKUP_DIR="/opt/tarsight_backup_${BACKUP_DATE}"
+BACKUP_ROOT="${PROJECT_DIR}/.deploy-backups"
+BACKUP_DIR="${BACKUP_ROOT}/${BACKUP_DATE}"
 NO_LINT=false
 TARGET_REF="origin/master"
 FRONTEND_PORT="25380"
+
+rollback() {
+    echo -e "${YELLOW}自动回滚到 ${PRE_DEPLOY_REF}...${NC}"
+    git reset --hard "$PRE_DEPLOY_REF"
+    if [ -f "frontend/package.json.bak" ]; then
+        mv frontend/package.json.bak frontend/package.json
+    fi
+    docker compose build frontend
+    docker compose up -d frontend --no-deps --force-recreate
+    echo -e "${GREEN}✓ 已回滚到部署前版本${NC}"
+}
 
 # 解析命令行参数
 while [[ $# -gt 0 ]]; do
@@ -71,10 +83,17 @@ PRE_DEPLOY_REF=$(git rev-parse HEAD)
 echo -e "${GREEN}✓ 当前版本: ${PRE_DEPLOY_REF}${NC}"
 
 # 2. 创建备份
-echo -e "${YELLOW}[2/7] 创建备份...${NC}"
+echo -e "${YELLOW}[2/7] 创建轻量备份...${NC}"
+mkdir -p "$BACKUP_DIR"
 echo -e "备份目录: ${BACKUP_DIR}"
-sudo cp -r "$PROJECT_DIR" "$BACKUP_DIR"
-echo -e "${GREEN}✓ 备份完成${NC}"
+printf '%s\n' "$PRE_DEPLOY_REF" > "${BACKUP_DIR}/pre_deploy_ref.txt"
+if [ -f ".env" ]; then
+    cp ".env" "${BACKUP_DIR}/.env"
+fi
+cp "docker-compose.yml" "${BACKUP_DIR}/docker-compose.yml"
+echo -e "${GREEN}✓ 轻量备份完成${NC}"
+mkdir -p "$BACKUP_ROOT"
+find "$BACKUP_ROOT" -mindepth 1 -maxdepth 1 -type d | sort | head -n -10 | xargs -r rm -rf
 
 # 创建git备份分支
 BACKUP_BRANCH="backup-before-auto-deploy-${BACKUP_DATE}"
@@ -126,15 +145,7 @@ else
     echo -e "${YELLOW}构建错误日志:${NC}"
     tail -50 /tmp/auto-build.log
 
-    # 自动回滚
-    echo -e "${YELLOW}自动回滚...${NC}"
-    git reset --hard "$PRE_DEPLOY_REF"
-    if [ -f "frontend/package.json.bak" ]; then
-        mv frontend/package.json.bak frontend/package.json
-    fi
-    docker compose build frontend
-    docker compose up -d frontend --no-deps --force-recreate
-    echo -e "${GREEN}✓ 已回滚到之前版本${NC}"
+    rollback
     exit 1
 fi
 echo ""
@@ -169,11 +180,7 @@ else
     echo -e "${YELLOW}错误日志:${NC}"
     docker compose logs frontend --tail 50
 
-    # 自动回滚
-    echo -e "${YELLOW}自动回滚...${NC}"
-    cd "$BACKUP_DIR"
-    docker compose up -d frontend
-    echo -e "${GREEN}✓ 已回滚到备份版本${NC}"
+    rollback
     exit 1
 fi
 

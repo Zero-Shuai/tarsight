@@ -6,6 +6,10 @@ on:
       - master
   workflow_dispatch:
 
+concurrency:
+  group: production-deploy
+  cancel-in-progress: true
+
 jobs:
   deploy:
     name: Deploy to Production Server
@@ -41,16 +45,19 @@ jobs:
 
             cd /opt/tarsight || exit 1
 
+            echo -e "${YELLOW}统一部署目录权限...${NC}"
+            sudo chown -R "$(id -un)":"$(id -gn)" /opt/tarsight
+
             echo -e "${YELLOW}同步服务器代码到目标版本...${NC}"
-            sudo git -C /opt/tarsight fetch origin "${{ github.sha }}"
-            sudo git -C /opt/tarsight reset --hard "${{ github.sha }}"
+            git -C /opt/tarsight fetch origin "${{ github.sha }}"
+            git -C /opt/tarsight reset --hard "${{ github.sha }}"
 
             # 在 GitHub Actions 层面处理 commit message，避免多行文本导致 bash 语法错误
             EXTRA_ARGS=""
             echo "${{ github.event.head_commit.message }}" | grep -qE "\[no-lint\]|\[skip\s+lint\]" && EXTRA_ARGS="--no-lint" || true
 
             echo -e "${YELLOW}开始自动部署...${NC}"
-            sudo bash scripts/auto-deploy.sh --ref "${{ github.sha }}" $EXTRA_ARGS || {
+            bash scripts/auto-deploy.sh --ref "${{ github.sha }}" $EXTRA_ARGS || {
               echo -e "${RED}❌ 自动部署失败${NC}"
               exit 1
             }
