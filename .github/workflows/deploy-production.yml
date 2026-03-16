@@ -42,8 +42,8 @@ jobs:
             cd /opt/tarsight || exit 1
 
             echo -e "${YELLOW}同步服务器代码到目标版本...${NC}"
-            git fetch origin "${{ github.sha }}"
-            git reset --hard "${{ github.sha }}"
+            sudo git -C /opt/tarsight fetch origin "${{ github.sha }}"
+            sudo git -C /opt/tarsight reset --hard "${{ github.sha }}"
 
             # 在 GitHub Actions 层面处理 commit message，避免多行文本导致 bash 语法错误
             EXTRA_ARGS=""
