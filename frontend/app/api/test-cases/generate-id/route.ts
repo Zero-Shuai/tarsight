@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server'
  * GET /api/test-cases/generate-id?module_id=xxx
  *
  * 自动生成测试用例编号
- * 格式: PRJ001-MOD001-001
+ * 格式: {PROJECT_CODE}-{MODULE_CODE}-001
  */
 
 // 简单的内存缓存，用于存储模块的最大序号
@@ -76,7 +76,7 @@ export async function GET(request: Request) {
         .limit(1)
 
       if (lastCase && lastCase.length > 0 && lastCase[0].case_id) {
-        // 从 case_id 中提取序号部分（格式：PRJ001-MOD001-序号）
+        // 从 case_id 中提取序号部分（格式：PROJECT_CODE-MODULE_CODE-序号）
         const match = lastCase[0].case_id.match(/-(\d{3})$/)
         if (match) {
           nextSeq = parseInt(match[1], 10) + 1

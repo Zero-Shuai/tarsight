@@ -143,7 +143,7 @@ export function NewTestCaseForm({ modules }) {
 - 过度设计自动生成逻辑
 
 **澄清后的需求**:
-1. **编号格式**: PRJ001-MOD001-001（使用连字符）
+1. **编号格式**: `{PROJECT_CODE}-{MODULE_CODE}-001`（使用连字符）
 2. **输入方式**: 项目编号和模块编号都手动输入
 3. **序号规则**: 按模块递增（每个模块独立计数）
 4. **数据迁移**: 统一迁移现有用例编号
@@ -161,7 +161,7 @@ export function NewTestCaseForm({ modules }) {
 // 测试用例表单 - 自动生成预览
 <Input
   value={formData.case_id || previewCaseId}
-  placeholder={previewCaseId || "PRJ001-MOD001-001"}
+  placeholder={previewCaseId || "PROJECT-MODULE-001"}
 />
 <Button onClick={() => setFormData({ ...formData, case_id: previewCaseId })}>
   <Sparkles /> 自动生成

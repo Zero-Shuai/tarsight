@@ -9,7 +9,7 @@
 export type Project = {
   id: string
   name: string
-  project_code: string  // 项目编号：1-20位字母+数字，不能纯字母或纯数字
+  project_code: string  // 项目编号：1-20位字符，必须以字母开头，可包含数字
   description?: string
   base_url?: string
   created_at: string
@@ -23,7 +23,7 @@ export type Module = {
   id: string
   project_id: string
   name: string
-  module_code: string  // 模块编号：1-20位字母+数字，不能纯字母或纯数字
+  module_code: string  // 模块编号：1-20位字符，必须以字母开头，可包含数字
   description?: string
   created_at: string
 }
@@ -35,7 +35,7 @@ export type TestCase = {
   id: string
   project_id: string
   module_id: string
-  case_id: string  // 测试用例编号，格式：PRJ001-MOD001-001
+  case_id: string  // 测试用例编号，格式：{PROJECT_CODE}-{MODULE_CODE}-001
   test_name: string
   description?: string
   method: string

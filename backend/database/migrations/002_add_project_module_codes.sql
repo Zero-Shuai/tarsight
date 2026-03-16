@@ -18,7 +18,7 @@ ALTER TABLE public.projects
 ADD CONSTRAINT projects_project_code_key UNIQUE (project_code);
 
 -- Add comment
-COMMENT ON COLUMN public.projects.project_code IS 'Project code in format PRJ001, PRJ002, etc.';
+COMMENT ON COLUMN public.projects.project_code IS 'Project code in alphanumeric format, starting with a letter (e.g., PRJ001, TARSIGHT)';
 
 -- =====================================================
 -- Step 2: Add module_code to modules table
@@ -34,7 +34,7 @@ ALTER TABLE public.modules
 ADD CONSTRAINT modules_project_module_code_key UNIQUE (project_id, module_code);
 
 -- Add comment
-COMMENT ON COLUMN public.modules.module_code IS 'Module code in format MOD001, MOD002, etc. (unique within project)';
+COMMENT ON COLUMN public.modules.module_code IS 'Module code in alphanumeric format, starting with a letter (e.g., MOD001, CREATORLIST), unique within project';
 
 -- =====================================================
 -- Step 3: Extend case_id length in test_cases table
@@ -44,7 +44,7 @@ ALTER TABLE public.test_cases
 ALTER COLUMN case_id TYPE VARCHAR(50);
 
 -- Update comment
-COMMENT ON COLUMN public.test_cases.case_id IS 'Test case ID in format PROJECT_CODE-MODULE_CODE-SEQUENCE (e.g., PRJ001-MOD001-001)';
+COMMENT ON COLUMN public.test_cases.case_id IS 'Test case ID in format PROJECT_CODE-MODULE_CODE-SEQUENCE (e.g., PROJECT-CODE-001 or TARSIGHT-CREATORLIST-001)';
 
 -- =====================================================
 -- Step 4: Create indexes for performance
@@ -70,7 +70,7 @@ BEGIN
     -- Get the maximum sequence number for this module
     SELECT COALESCE(MAX(
         CASE
-            WHEN case_id ~ 'PRJ\d{3}-MOD\d{3}-(\d{3})'
+            WHEN case_id ~ '^[A-Za-z][A-Za-z0-9]{0,19}-[A-Za-z][A-Za-z0-9]{0,19}-\d{3}$'
             THEN CAST(REGEXP_REPLACE(case_id, '.*-', '') AS INTEGER)
             ELSE 0
         END
@@ -79,7 +79,7 @@ BEGIN
     FROM public.test_cases
     WHERE project_id = p_project_id
       AND module_id = p_module_id
-      AND case_id ~ '^PRJ\d{3}-MOD\d{3}-\d{3}$';
+      AND case_id ~ '^[A-Za-z][A-Za-z0-9]{0,19}-[A-Za-z][A-Za-z0-9]{0,19}-\d{3}$';
 
     -- Increment sequence
     v_next_sequence := v_max_sequence + 1;
@@ -121,16 +121,16 @@ BEGIN
     -- Get next sequence
     v_sequence := public.generate_next_case_sequence(p_project_id, p_module_id);
 
-    -- Format: PRJ001-MOD001-001 (zero-padded to 3 digits)
-    v_case_id := format('%s-%s-%03d', v_project_code, v_module_code, v_sequence);
+    -- Format: PROJECT_CODE-MODULE_CODE-001 (zero-padded to 3 digits)
+    v_case_id := format('%s-%s-%s', v_project_code, v_module_code, LPAD(v_sequence::TEXT, 3, '0'));
 
     RETURN v_case_id;
 END;
 $$ LANGUAGE plpgsql;
 
 -- Add comments for functions
-COMMENT ON FUNCTION public.generate_case_id IS 'Generate auto-incrementing case ID in format PRJ001-MOD001-001';
-COMMENT ON FUNCTION public.generate_next_case_sequence IS 'Get next sequence number for test cases within a module';
+COMMENT ON FUNCTION public.generate_case_id IS 'Generate auto-incrementing case ID in format PROJECT_CODE-MODULE_CODE-001';
+COMMENT ON FUNCTION public.generate_next_case_sequence IS 'Get next sequence number for test cases within a module using the current project/module code format';
 
 -- =====================================================
 -- Step 6: Success message

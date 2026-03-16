@@ -249,7 +249,7 @@ export type TestCase = {
   id: string              // 主键
   project_id: string      // 项目 ID
   module_id: string       // 模块 ID
-  case_id: string         // 用例编号（PRJ001-MOD001-001）
+  case_id: string         // 用例编号（{PROJECT_CODE}-{MODULE_CODE}-001）
   test_name: string       // 用例名称
   description?: string    // 描述
   method: string          // HTTP 方法

@@ -542,14 +542,14 @@ class SupabaseClient:
 
         Args:
             project_id: 项目ID
-            case_ids: 用例ID列表（支持新格式 PRJ001-MOD001-001）
+            case_ids: 用例ID列表（支持新格式 PROJECT_CODE-MODULE_CODE-001）
 
         Returns:
             测试用例列表
         """
         try:
             # 处理新格式：用例ID包含连字符，需要用引号包裹
-            # 例如：PRJ001-MOD001-001 需要转换为 "PRJ001-MOD001-001"
+            # 例如：TARSIGHT-CREATORLIST-001 需要转换为 "TARSIGHT-CREATORLIST-001"
             escaped_ids = ','.join([f'"{cid}"' for cid in case_ids])
 
             params = {

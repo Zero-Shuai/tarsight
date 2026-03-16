@@ -5,34 +5,34 @@
 ### ✅ 1. 数据库迁移脚本
 
 #### Migration 002: 添加编号字段
-**文件**: `supabase_version/database/migrations/002_add_project_module_codes.sql`
+**文件**: `supabase/migrations/002_add_project_module_codes.sql`
 
 - ✅ 添加 `project_code` 字段到 `projects` 表（VARCHAR(20), UNIQUE）
 - ✅ 添加 `module_code` 字段到 `modules` 表（VARCHAR(20), UNIQUE per project）
 - ✅ 扩展 `test_cases.case_id` 字段长度从 VARCHAR(20) 到 VARCHAR(50)
 - ✅ 创建索引提升查询性能
 - ✅ 创建数据库函数 `generate_case_id()` 和 `generate_next_case_sequence()`
-- ✅ 支持自动生成格式：`PRJ001-MOD001-001`
+- ✅ 支持自动生成格式：`{PROJECT_CODE}-{MODULE_CODE}-001`
 
 #### Migration 003: 数据迁移
-**文件**: `supabase_version/database/migrations/003_migrate_to_new_id_format.sql`
+**文件**: `supabase/migrations/003_migrate_to_new_id_format.sql`
 
 - ✅ 创建备份表（`*_backup_20260106`）
-- ✅ 为现有项目生成编号（PRJ001, PRJ002...）
-- ✅ 为现有模块生成编号（MOD001, MOD002...）
+- ✅ 为缺失编号的项目生成编号（如 `PRJ001`）
+- ✅ 为缺失编号的模块生成编号（如 `MOD001`）
 - ✅ 迁移现有测试用例编号为新格式
 - ✅ 添加 NOT NULL 约束
 - ✅ 创建映射表供参考
 
 ### ✅ 2. TypeScript 类型定义
-**文件**: `tarsight-dashboard/lib/types/database.ts`
+**文件**: `frontend/lib/types/database.ts`
 
 - ✅ `Project` 类型添加 `project_code: string`
 - ✅ `Module` 类型添加 `module_code: string`
 - ✅ `TestCase.case_id` 添加注释说明新格式
 
 ### ✅ 3. API 端点
-**文件**: `tarsight-dashboard/app/api/test-cases/generate-id/route.ts`
+**文件**: `frontend/app/api/test-cases/generate-id/route.ts`
 
 - ✅ GET 端点：`/api/test-cases/generate-id?module_id=xxx`
 - ✅ 自动获取项目和模块编号
@@ -42,14 +42,14 @@
 ### ✅ 4. 前端改造
 
 #### 模块管理页面
-**文件**: `tarsight-dashboard/app/(auth)/modules/page.tsx`
+**文件**: `frontend/app/(auth)/modules/page.tsx`
 
 - ✅ 表单添加"模块编号"输入框
-- ✅ 自动转大写，格式验证（MOD\d{3}）
+- ✅ 自动转大写，格式验证（字母开头，可包含数字）
 - ✅ 模块卡片显示编号徽章
 
 #### 测试用例表单
-**文件**: `tarsight-dashboard/components/test-case-form.tsx`
+**文件**: `frontend/components/test-case-form.tsx`
 
 - ✅ 监听模块变化，自动预览编号
 - ✅ 显示预览编号提示
@@ -58,7 +58,7 @@
 - ✅ 只在新增时预览，编辑时不预览
 
 ### ✅ 5. Python 后端适配
-**文件**: `supabase_version/utils/supabase_client.py`
+**文件**: `backend/utils/supabase_client.py`
 
 - ✅ 更新 `get_test_cases_by_case_ids()` 方法
 - ✅ 正确处理包含连字符的编号（用引号包裹）
@@ -72,11 +72,11 @@
 
 ```bash
 # 进入 Supabase 项目目录
-cd /Users/zhangshuai/WorkSpace/Tarsight/supabase_version
+cd /Users/zhangshuai/WorkSpace/Tarsight
 
 # 方式 1: 使用 Supabase CLI（推荐）
-npx supabase db execute --file database/migrations/002_add_project_module_codes.sql
-npx supabase db execute --file database/migrations/003_migrate_to_new_id_format.sql
+npx supabase db execute --file supabase/migrations/002_add_project_module_codes.sql
+npx supabase db execute --file supabase/migrations/003_migrate_to_new_id_format.sql
 
 # 方式 2: 使用 Supabase Dashboard
 # 1. 打开 Supabase Dashboard
@@ -105,7 +105,7 @@ SELECT project_id, module_code, COUNT(*) FROM modules GROUP BY project_id, modul
 
 1. **启动开发服务器**
    ```bash
-   cd tarsight-dashboard
+   cd frontend
    npm run dev
    ```
 
@@ -125,7 +125,7 @@ SELECT project_id, module_code, COUNT(*) FROM modules GROUP BY project_id, modul
 ### 步骤 4: 测试 Python 后端
 
 ```bash
-cd supabase_version
+cd backend
 
 # 测试查询功能
 .venv/bin/python -c "
@@ -135,7 +135,7 @@ client = get_supabase_client()
 # 测试新格式查询
 test_cases = client.get_test_cases_by_case_ids(
     project_id='8786c21f-7437-4a2d-8486-9365a382b38e',
-    case_ids=['PRJ001-MOD001-001', 'PRJ001-MOD001-002']
+    case_ids=['TARSIGHT-POSTLIST-001', 'TARSIGHT-QUICKSEARCH-001']
 )
 print(f'查询到 {len(test_cases)} 个测试用例')
 for tc in test_cases:
@@ -176,20 +176,20 @@ for tc in test_cases:
 ### 格式规范
 ```
 项目编号 - 模块编号 - 序号
-PRJ001 - MOD001 - 001
+PROJECT_CODE - MODULE_CODE - 001
 ```
 
 ### 命名规则
-- **项目编号**: `PRJ` + 三位数字（PRJ001, PRJ002...）
-- **模块编号**: `MOD` + 三位数字（MOD001, MOD002...）
+- **项目编号**: 1-20 位字符，必须字母开头，可包含数字
+- **模块编号**: 1-20 位字符，必须字母开头，可包含数字
 - **序号**: 三位数字，按模块递增（001, 002, 003...）
 
 ### 示例
 ```
-PRJ001-MOD001-001  (项目1的模块1的第1个用例)
-PRJ001-MOD001-002  (项目1的模块1的第2个用例)
-PRJ001-MOD002-001  (项目1的模块2的第1个用例)
-PRJ002-MOD001-001  (项目2的模块1的第1个用例)
+TARSIGHT-POSTLIST-001      (Tarsight 项目的 postlist 模块第 1 个用例)
+TARSIGHT-POSTINSIGHT-001   (Tarsight 项目的 postinsight 模块第 1 个用例)
+TARSIGHT-POSTINSIGHT-002   (Tarsight 项目的 postinsight 模块第 2 个用例)
+TARSIGHT-CREATORLIST-001   (Tarsight 项目的 CreatorList 模块第 1 个用例)
 ```
 
 ---
@@ -202,7 +202,7 @@ PRJ002-MOD001-001  (项目2的模块1的第1个用例)
 
 **解决**:
 1. 进入模块管理页面
-2. 编辑模块，设置模块编号（例如：MOD001）
+2. 编辑模块，设置模块编号（例如：CREATORLIST 或 MOD001）
 3. 返回测试用例表单重新选择模块
 
 ### 问题 2: 数据库迁移失败

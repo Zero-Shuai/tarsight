@@ -103,7 +103,7 @@ def execute_pytest(case_ids: str, execution_id: str, project_id: str) -> bool:
     执行 pytest 测试
 
     Args:
-        case_ids: 测试用例ID，逗号分隔（如 "TS001,TS002"）
+        case_ids: 测试用例ID，逗号分隔（如 "TARSIGHT-POSTLIST-001,TARSIGHT-QUICKSEARCH-001"）
         execution_id: 执行记录ID（由前端传入）
         project_id: 项目ID
 

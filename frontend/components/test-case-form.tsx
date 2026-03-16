@@ -296,7 +296,7 @@ export function TestCaseForm({ testCase, modules, onSuccess, onCancel }: TestCas
                   value={formData.case_id || previewCaseId}
                   onChange={(e) => setFormData({ ...formData, case_id: e.target.value })}
                   required
-                  placeholder={testCase ? '' : previewCaseId || "PRJ001-MOD001-001"}
+                  placeholder={testCase ? '' : previewCaseId || "PROJECT-MODULE-001"}
                   disabled={!testCase && isLoadingPreview}
                   className="flex-1"
                 />

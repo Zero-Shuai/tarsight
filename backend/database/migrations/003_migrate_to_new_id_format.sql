@@ -33,7 +33,7 @@ END $$;
 WITH ranked_projects AS (
     SELECT
         id,
-        'PRJ' || LPAD(ROW_NUMBER() OVER (ORDER BY created_at)::TEXT, 3, '0') AS project_code
+        'PRJ' || LPAD(ROW_NUMBER() OVER (ORDER BY created_at, id)::TEXT, 3, '0') AS project_code
     FROM public.projects
     WHERE project_code IS NULL OR project_code = ''
 )
@@ -58,7 +58,7 @@ WITH ranked_modules AS (
         project_id,
         'MOD' || LPAD(ROW_NUMBER() OVER (
             PARTITION BY project_id
-            ORDER BY created_at
+            ORDER BY created_at, id
         )::TEXT, 3, '0') AS module_code
     FROM public.modules
     WHERE module_code IS NULL OR module_code = ''
@@ -75,7 +75,7 @@ END $$;
 
 -- =====================================================
 -- Step 4: Migrate existing test_cases to new format
--- Format: PRJ001-MOD001-001
+-- Format: PROJECT_CODE-MODULE_CODE-001
 -- =====================================================
 
 WITH migrated_cases AS (
@@ -85,15 +85,15 @@ WITH migrated_cases AS (
         m.module_code,
         ROW_NUMBER() OVER (
             PARTITION BY tc.project_id, tc.module_id
-            ORDER BY tc.created_at
+            ORDER BY tc.created_at, tc.id
         ) AS new_sequence
     FROM public.test_cases tc
     JOIN public.projects p ON tc.project_id = p.id
     JOIN public.modules m ON tc.module_id = m.id
-    WHERE tc.case_id NOT ~ '^PRJ\d{3}-MOD\d{3}-\d{3}$'
+    WHERE tc.case_id !~ '^[A-Za-z][A-Za-z0-9]{0,19}-[A-Za-z][A-Za-z0-9]{0,19}-\d{3}$'
 )
 UPDATE public.test_cases tc
-SET case_id = format('%s-%s-%03d', mc.project_code, mc.module_code, mc.new_sequence)
+SET case_id = format('%s-%s-%s', mc.project_code, mc.module_code, LPAD(mc.new_sequence::TEXT, 3, '0'))
 FROM migrated_cases mc
 WHERE tc.id = mc.id;
 
@@ -127,6 +127,18 @@ CREATE TABLE IF NOT EXISTS public.case_id_mapping (
     migration_date TIMESTAMP DEFAULT NOW(),
     PRIMARY KEY (old_case_id)
 );
+
+INSERT INTO public.case_id_mapping (old_case_id, new_case_id)
+SELECT
+    backup.case_id,
+    current_cases.case_id
+FROM public.test_cases_backup_20260106 backup
+JOIN public.test_cases current_cases ON current_cases.id = backup.id
+WHERE backup.case_id IS DISTINCT FROM current_cases.case_id
+ON CONFLICT (old_case_id) DO UPDATE
+SET
+    new_case_id = EXCLUDED.new_case_id,
+    migration_date = NOW();
 
 DO $$
 BEGIN
@@ -162,7 +174,7 @@ BEGIN
     RAISE NOTICE '   1. All tables have been backed up with _backup_20260106 suffix';
     RAISE NOTICE '   2. Project codes generated: PRJ001, PRJ002, etc.';
     RAISE NOTICE '   3. Module codes generated: MOD001, MOD002, etc.';
-    RAISE NOTICE '   4. Test case IDs migrated: PRJ001-MOD001-001 format';
+    RAISE NOTICE '   4. Test case IDs migrated: PROJECT_CODE-MODULE_CODE-001 format';
     RAISE NOTICE '   5. A mapping table has been created for reference';
     RAISE NOTICE '';
     RAISE NOTICE '⚠️  Rollback Information:';
