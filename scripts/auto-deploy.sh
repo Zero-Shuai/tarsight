@@ -1,9 +1,9 @@
 #!/bin/bash
 # Tarsight 自动化部署脚本（GitHub Actions 专用）
 # 用途：非交互式自动部署，由 GitHub Actions 调用
-# 使用方法: sudo bash scripts/auto-deploy.sh [--no-lint]
+# 使用方法: sudo bash scripts/auto-deploy.sh [--ref <git-ref>] [--no-lint]
 
-set -e  # 遇到错误立即退出
+set -euo pipefail  # 遇到错误立即退出
 
 # 颜色定义
 RED='\033[0;31m'
@@ -17,10 +17,19 @@ PROJECT_DIR="/opt/tarsight"
 BACKUP_DATE=$(date +%Y%m%d_%H%M%S)
 BACKUP_DIR="/opt/tarsight_backup_${BACKUP_DATE}"
 NO_LINT=false
+TARGET_REF="origin/master"
 
 # 解析命令行参数
 while [[ $# -gt 0 ]]; do
     case $1 in
+        --ref)
+            if [[ $# -lt 2 ]]; then
+                echo -e "${RED}缺少 --ref 的值${NC}"
+                exit 1
+            fi
+            TARGET_REF="$2"
+            shift 2
+            ;;
         --no-lint)
             NO_LINT=true
             shift
@@ -35,6 +44,7 @@ done
 echo -e "${BLUE}========================================${NC}"
 echo -e "${BLUE}  Tarsight 自动化部署${NC}"
 echo -e "${BLUE}  时间: $(date)${NC}"
+echo -e "${BLUE}  目标版本: ${TARGET_REF}${NC}"
 if [ "$NO_LINT" = true ]; then
     echo -e "${YELLOW}  模式: 禁用类型检查${NC}"
 fi
@@ -48,18 +58,20 @@ if [ ! -d "$PROJECT_DIR" ]; then
     exit 1
 fi
 
-cd $PROJECT_DIR
+cd "$PROJECT_DIR"
 echo -e "${GREEN}✓ 项目目录: $PROJECT_DIR${NC}"
+PRE_DEPLOY_REF=$(git rev-parse HEAD)
+echo -e "${GREEN}✓ 当前版本: ${PRE_DEPLOY_REF}${NC}"
 
 # 2. 创建备份
 echo -e "${YELLOW}[2/7] 创建备份...${NC}"
 echo -e "备份目录: ${BACKUP_DIR}"
-sudo cp -r $PROJECT_DIR $BACKUP_DIR
+sudo cp -r "$PROJECT_DIR" "$BACKUP_DIR"
 echo -e "${GREEN}✓ 备份完成${NC}"
 
 # 创建git备份分支
 BACKUP_BRANCH="backup-before-auto-deploy-${BACKUP_DATE}"
-git branch $BACKUP_BRANCH
+git branch "$BACKUP_BRANCH"
 echo -e "${GREEN}✓ Git备份分支: $BACKUP_BRANCH${NC}"
 echo ""
 
@@ -77,8 +89,8 @@ fi
 # 拉取最新代码
 echo -e "${YELLOW}拉取最新代码...${NC}"
 git fetch origin
-git reset --hard origin/master
-echo -e "${GREEN}✓ 已更新到最新代码${NC}"
+git reset --hard "$TARGET_REF"
+echo -e "${GREEN}✓ 已更新到目标版本: $(git rev-parse HEAD)${NC}"
 echo ""
 
 # 4. 处理类型检查选项
@@ -109,7 +121,7 @@ else
 
     # 自动回滚
     echo -e "${YELLOW}自动回滚...${NC}"
-    git reset --hard HEAD~1
+    git reset --hard "$PRE_DEPLOY_REF"
     if [ -f "frontend/package.json.bak" ]; then
         mv frontend/package.json.bak frontend/package.json
     fi
@@ -124,6 +136,9 @@ echo ""
 echo -e "${YELLOW}[6/7] 重启容器...${NC}"
 docker compose stop frontend
 docker compose up -d frontend --no-deps --force-recreate
+if [ -f "frontend/package.json.bak" ]; then
+    mv frontend/package.json.bak frontend/package.json
+fi
 echo -e "${GREEN}✓ 容器已重启${NC}"
 echo ""
 
@@ -136,10 +151,11 @@ sleep 60
 if docker ps | grep -q tarsight-frontend; then
     echo -e "${GREEN}✓ 容器正在运行${NC}"
 
-    if curl -f -s http://localhost:3000 > /dev/null; then
-        echo -e "${GREEN}✓ Web服务响应正常${NC}"
+    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 || echo "000")
+    if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "304" ] || [ "$HTTP_CODE" = "307" ]; then
+        echo -e "${GREEN}✓ Web服务响应正常 (HTTP ${HTTP_CODE})${NC}"
     else
-        echo -e "${YELLOW}⚠ Web服务响应测试失败${NC}"
+        echo -e "${YELLOW}⚠ Web服务响应测试失败 (HTTP ${HTTP_CODE})${NC}"
     fi
 else
     echo -e "${RED}❌ 容器启动失败${NC}"
@@ -148,7 +164,7 @@ else
 
     # 自动回滚
     echo -e "${YELLOW}自动回滚...${NC}"
-    cd $BACKUP_DIR
+    cd "$BACKUP_DIR"
     docker compose up -d frontend
     echo -e "${GREEN}✓ 已回滚到备份版本${NC}"
     exit 1
