@@ -16,6 +16,7 @@ services:
         - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
         - NEXT_PUBLIC_PROJECT_ID=${NEXT_PUBLIC_PROJECT_ID}
         - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+        - NEXT_PUBLIC_APP_VERSION=${NEXT_PUBLIC_APP_VERSION:-dev}
         - NEXT_BUILD_ARGS=${NEXT_BUILD_ARGS:-}
     container_name: tarsight-frontend
     restart: unless-stopped
@@ -27,8 +28,10 @@ services:
       - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
       - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
       - NEXT_PUBLIC_PROJECT_ID=${NEXT_PUBLIC_PROJECT_ID:-8786c21f-7437-4a2d-8486-9365a382b38e}
+      - NEXT_PUBLIC_APP_VERSION=${NEXT_PUBLIC_APP_VERSION:-dev}
       # 服务端密钥（用于 API 路由）
       - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - APP_VERSION=${APP_VERSION:-dev}
       # Python 测试执行环境配置
       - PROJECT_ROOT=/app/backend
       - PYTHON_PATH=/usr/bin/python3

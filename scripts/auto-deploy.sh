@@ -91,7 +91,11 @@ if [ -f ".env" ]; then
 fi
 FRONTEND_PORT="${FRONTEND_PORT:-25380}"
 PRE_DEPLOY_REF=$(git rev-parse HEAD)
+APP_VERSION=$(git rev-parse --short "$TARGET_REF" 2>/dev/null || git rev-parse --short HEAD)
+export APP_VERSION
+export NEXT_PUBLIC_APP_VERSION="${APP_VERSION}"
 echo -e "${GREEN}✓ 当前版本: ${PRE_DEPLOY_REF}${NC}"
+echo -e "${GREEN}✓ 应用版本: ${APP_VERSION}${NC}"
 
 # 2. 创建备份
 echo -e "${YELLOW}[2/7] 创建轻量备份...${NC}"
@@ -172,11 +176,11 @@ sleep 60
 if docker ps | grep -q tarsight-frontend; then
     echo -e "${GREEN}✓ 容器正在运行${NC}"
 
-    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:${FRONTEND_PORT}" || echo "000")
-    if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "304" ] || [ "$HTTP_CODE" = "307" ]; then
-        echo -e "${GREEN}✓ Web服务响应正常 (HTTP ${HTTP_CODE})${NC}"
+    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:${FRONTEND_PORT}/api/health" || echo "000")
+    if [ "$HTTP_CODE" = "200" ]; then
+        echo -e "${GREEN}✓ 健康检查接口响应正常 (HTTP ${HTTP_CODE})${NC}"
     else
-        echo -e "${YELLOW}⚠ Web服务响应测试失败 (HTTP ${HTTP_CODE})${NC}"
+        echo -e "${YELLOW}⚠ 健康检查接口响应异常 (HTTP ${HTTP_CODE})${NC}"
     fi
 else
     echo -e "${RED}❌ 容器启动失败${NC}"

@@ -14,6 +14,7 @@ import {
   FolderOpen,
 } from 'lucide-react'
 import { UserMenu } from '@/components/user-menu'
+import { VersionBadge } from '@/components/version-badge'
 
 const navItems = [
   {
@@ -101,6 +102,9 @@ function SidebarComponent() {
           账户
         </div>
         <UserMenu />
+        <div className="mt-4 px-3">
+          <VersionBadge className="border-white/10 bg-white/5 text-slate-400" />
+        </div>
       </div>
     </div>
   )

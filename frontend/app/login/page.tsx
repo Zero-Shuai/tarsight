@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { auth } from '@/lib/supabase/client'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
+import { VersionBadge } from '@/components/version-badge'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -210,6 +211,9 @@ export default function LoginPage() {
 
           <div className="mt-6 text-center text-xs text-gray-500">
             登录即表示您同意我们的服务条款和隐私政策
+          </div>
+          <div className="flex justify-center">
+            <VersionBadge />
           </div>
         </div>
       </div>
