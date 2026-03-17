@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import type { AITestCaseDraft, Module } from '@/lib/types/database'
 
-type AIProvider = 'openai' | 'openai_compatible'
+type AIProvider = 'openai' | 'deepseek' | 'openai_compatible'
 
 interface AITestCaseGeneratorDrawerProps {
   modules: Module[]
@@ -39,11 +39,16 @@ export function AITestCaseGeneratorDrawer({ modules, onClose, onApply }: AITestC
     setProvider(value)
     if (value === 'openai') {
       setBaseUrl('https://api.openai.com/v1')
-      if (!model) {
-        setModel('gpt-5-mini')
-      }
+      setModel('gpt-5-mini')
+      return
     }
-  }, [model])
+
+    if (value === 'deepseek') {
+      setBaseUrl('https://api.deepseek.com')
+      setModel('deepseek-chat')
+      return
+    }
+  }, [])
 
   const handleGenerate = useCallback(async () => {
     if (!apiKey.trim()) {
@@ -133,6 +138,7 @@ export function AITestCaseGeneratorDrawer({ modules, onClose, onApply }: AITestC
                   className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white"
                 >
                   <option value="openai">OpenAI</option>
+                  <option value="deepseek">DeepSeek</option>
                   <option value="openai_compatible">OpenAI-Compatible</option>
                 </select>
               </div>
@@ -211,7 +217,7 @@ export function AITestCaseGeneratorDrawer({ modules, onClose, onApply }: AITestC
 
             <div className="flex items-center justify-between gap-4">
               <div className="text-xs text-slate-500">
-                支持 OpenAI 和兼容 OpenAI Responses API 的平台。
+                支持 OpenAI、DeepSeek，以及兼容 OpenAI 协议的平台。
               </div>
               <Button
                 type="button"
