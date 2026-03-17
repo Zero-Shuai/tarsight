@@ -47,11 +47,11 @@ services:
       - tarsight-network
     # 健康检查
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/healthz"]
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://127.0.0.1:3000/healthz || exit 1"]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 40s
+      retries: 10
+      start_period: 120s
     # 资源限制
     deploy:
       resources:
