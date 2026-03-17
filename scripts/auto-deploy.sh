@@ -91,7 +91,13 @@ if [ -f ".env" ]; then
 fi
 FRONTEND_PORT="${FRONTEND_PORT:-25380}"
 PRE_DEPLOY_REF=$(git rev-parse HEAD)
-APP_RELEASE_VERSION="${APP_RELEASE_VERSION:-1.0}"
+if [ -f "RELEASE_VERSION" ]; then
+    APP_RELEASE_VERSION="$(tr -d '\r\n' < RELEASE_VERSION)"
+elif [ -n "${APP_RELEASE_VERSION:-}" ]; then
+    APP_RELEASE_VERSION="${APP_RELEASE_VERSION}"
+else
+    APP_RELEASE_VERSION="1.0"
+fi
 APP_REVISION=$(git rev-parse --short "$TARGET_REF" 2>/dev/null || git rev-parse --short HEAD)
 APP_VERSION="${APP_RELEASE_VERSION}"
 APP_DEPLOYED_AT=$(date -u '+%Y-%m-%dT%H:%M:%SZ')

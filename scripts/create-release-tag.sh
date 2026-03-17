@@ -23,6 +23,16 @@ fi
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$REPO_ROOT"
 
+RELEASE_VERSION_FILE="$REPO_ROOT/RELEASE_VERSION"
+if [ -f "$RELEASE_VERSION_FILE" ]; then
+  RELEASE_VERSION="$(tr -d '\r\n' < "$RELEASE_VERSION_FILE")"
+  if [ -n "$RELEASE_VERSION" ] && [[ "$VERSION" != ${RELEASE_VERSION}.* ]]; then
+    echo "Tag 版本 $VERSION 与当前 RELEASE_VERSION=$RELEASE_VERSION 不一致"
+    echo "请先执行: bash scripts/set-release-version.sh ${VERSION%.*}"
+    exit 1
+  fi
+fi
+
 if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
   echo "工作区不干净，请先提交或清理后再发版"
   exit 1

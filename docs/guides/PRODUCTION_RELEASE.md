@@ -30,8 +30,13 @@ bash scripts/create-release-tag.sh 1.0.0
 ## 推荐发布流程
 
 1. 在本地完成开发和验证。
-2. 确认版本号，例如 `1.0.0`。
-3. 如果需要，先把 `/opt/tarsight/.env` 中的 `APP_RELEASE_VERSION` 更新为目标大版本，例如 `1.0`。
+2. 更新仓库内的业务版本号，例如：
+
+```bash
+bash scripts/set-release-version.sh 1.0
+```
+
+3. 确认发布 tag 版本号，例如 `1.0.0`。
 4. 创建并推送 tag：
 
 ```bash
@@ -52,6 +57,12 @@ curl http://test.shuai.click/api/status
 - `APP_RELEASE_VERSION`: 对外业务版本，例如 `1.0`
 - `APP_REVISION`: 当前代码修订，通常为 git 短 SHA
 - `APP_DEPLOYED_AT`: 部署时间
+
+其中：
+
+- `RELEASE_VERSION` 文件是仓库内受控的业务版本源
+- 生产部署时默认优先读取 `RELEASE_VERSION`
+- 线上 `.env` 不再作为主要版本来源
 
 ## 常用命令
 
