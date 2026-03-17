@@ -4,6 +4,7 @@ import { ListChecks, TrendingUp, Clock, AlertCircle, CheckCircle2, Hand, Setting
 import Link from 'next/link'
 import { Suspense } from 'react'
 import { DashboardSkeleton } from '@/components/dashboard-skeleton'
+import { SystemStatusCard } from '@/components/system-status-card'
 
 async function getDashboardData() {
   const supabase = await createClient()
@@ -156,6 +157,10 @@ async function DashboardContent() {
               </div>
             </div>
           </div>
+        </div>
+
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-[550ms] ease-out">
+          <SystemStatusCard />
         </div>
 
         {/* 模块分布 */}
