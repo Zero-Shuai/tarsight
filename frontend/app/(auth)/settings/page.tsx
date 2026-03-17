@@ -1,5 +1,5 @@
 import { QueueConfigForm } from '@/components/queue-config-form'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { SystemStatusCard } from '@/components/system-status-card'
 
 export const metadata = {
   title: '系统设置',
@@ -19,6 +19,10 @@ export default function SettingsPage() {
         {/* 设置表单 */}
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200 ease-out">
           <QueueConfigForm />
+        </div>
+
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300 ease-out">
+          <SystemStatusCard />
         </div>
       </div>
     </div>
