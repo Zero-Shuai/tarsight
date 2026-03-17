@@ -1,15 +1,16 @@
 'use client'
 
 import { useState, useMemo, useEffect, memo, useCallback } from 'react'
-import { ChevronDown, ChevronRight, Play, Edit, Trash2, Search, Plus } from 'lucide-react'
+import { ChevronDown, ChevronRight, Play, Edit, Trash2, Search, Plus, Sparkles } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { CheckCircle2, Circle, XCircle } from 'lucide-react'
-import type { TestCase, Module } from '@/lib/types/database'
+import type { AITestCaseDraft, TestCase, Module } from '@/lib/types/database'
 import { supabase as supabaseClient } from '@/lib/supabase/client'
 import { TestCaseFormDrawer } from './test-case-form-drawer'
 import { TestCaseRunDrawer } from './test-case-run-drawer'
+import { AITestCaseGeneratorDrawer } from './ai-test-case-generator-drawer'
 
 interface TestCaseWorkbenchProps {
   groupedCases: Record<string, TestCase[]>
@@ -52,6 +53,8 @@ export function TestCaseWorkbench({
   const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set(Object.keys(groupedCases)))
   const [editingCase, setEditingCase] = useState<TestCase | null>(null)
   const [runningCase, setRunningCase] = useState<TestCase | null>(null)
+  const [aiDraft, setAiDraft] = useState<AITestCaseDraft | null>(null)
+  const [aiDrawerOpen, setAiDrawerOpen] = useState(false)
 
   // Filter cases based on search query
   const filteredGroupedCases = useMemo(() => {
@@ -153,7 +156,18 @@ export function TestCaseWorkbench({
               {expandedModules.size === Object.keys(filteredGroupedCases).length ? '全部折叠' : '全部展开'}
             </Button>
             <Button
-              onClick={() => setEditingCase({} as TestCase)}
+              variant="outline"
+              onClick={() => setAiDrawerOpen(true)}
+              className="rounded-lg transition-all duration-200"
+            >
+              <Sparkles className="h-4 w-4 mr-2" />
+              AI 生成
+            </Button>
+            <Button
+              onClick={() => {
+                setAiDraft(null)
+                setEditingCase({} as TestCase)
+              }}
               className="bg-[#3B82F6] hover:bg-[#2563EB] text-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200"
             >
               <Plus className="h-4 w-4 mr-2" />
@@ -190,10 +204,27 @@ export function TestCaseWorkbench({
         <TestCaseFormDrawer
           testCase={editingCase.id ? editingCase : undefined}
           modules={modules}
-          onClose={() => setEditingCase(null)}
+          initialDraft={editingCase.id ? null : aiDraft}
+          onClose={() => {
+            setEditingCase(null)
+            setAiDraft(null)
+          }}
           onSuccess={() => {
             setEditingCase(null)
+            setAiDraft(null)
             onUpdate()
+          }}
+        />
+      )}
+
+      {aiDrawerOpen && (
+        <AITestCaseGeneratorDrawer
+          modules={modules}
+          onClose={() => setAiDrawerOpen(false)}
+          onApply={(draft) => {
+            setAiDraft(draft)
+            setAiDrawerOpen(false)
+            setEditingCase({} as TestCase)
           }}
         />
       )}

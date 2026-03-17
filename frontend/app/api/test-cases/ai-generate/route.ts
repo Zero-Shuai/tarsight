@@ -1,20 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import type { AssertionsConfig, Assertion } from '@/lib/types/database'
+import type { AITestCaseDraft, AssertionsConfig, Assertion } from '@/lib/types/database'
 
-type GeneratedCaseDraft = {
-  test_name: string
-  description: string
-  method: string
-  url: string
-  expected_status: number
-  headers: Record<string, string> | null
-  request_body: Record<string, unknown> | null
-  variables: Record<string, unknown> | null
-  tags: string[]
-  level: 'P0' | 'P1' | 'P2' | 'P3'
-  rationale?: string
-  assertions: AssertionsConfig
-}
+type Provider = 'openai' | 'openai_compatible'
 
 type OpenAIResponsesOutput = {
   output_text?: string
@@ -50,10 +37,7 @@ const CASE_SCHEMA = {
           headers: {
             anyOf: [
               { type: 'null' },
-              {
-                type: 'object',
-                additionalProperties: { type: 'string' }
-              }
+              { type: 'object', additionalProperties: { type: 'string' } }
             ]
           },
           request_body: {
@@ -136,14 +120,12 @@ function extractOutputText(payload: OpenAIResponsesOutput): string {
     return payload.output_text
   }
 
-  const text = payload.output
+  return payload.output
     ?.flatMap((item) => item.content || [])
     .filter((item) => item.type === 'output_text' || item.type === 'text')
     .map((item) => item.text || '')
     .join('')
-    .trim()
-
-  return text || ''
+    .trim() || ''
 }
 
 function toRecord(value: unknown): Record<string, unknown> | null {
@@ -214,7 +196,7 @@ function normalizeAssertions(config: AssertionsConfig | null | undefined): Asser
   }
 }
 
-function normalizeCase(raw: Record<string, unknown>): GeneratedCaseDraft {
+function normalizeCase(raw: Record<string, unknown>): AITestCaseDraft {
   return {
     test_name: String(raw.test_name || 'AI 生成测试用例'),
     description: String(raw.description || ''),
@@ -229,27 +211,55 @@ function normalizeCase(raw: Record<string, unknown>): GeneratedCaseDraft {
     request_body: toRecord(raw.request_body),
     variables: toRecord(raw.variables),
     tags: Array.isArray(raw.tags) ? raw.tags.map((tag) => String(tag)).slice(0, 8) : [],
-    level: ['P0', 'P1', 'P2', 'P3'].includes(String(raw.level)) ? String(raw.level) as GeneratedCaseDraft['level'] : 'P2',
+    level: ['P0', 'P1', 'P2', 'P3'].includes(String(raw.level)) ? String(raw.level) as AITestCaseDraft['level'] : 'P2',
     rationale: String(raw.rationale || ''),
     assertions: normalizeAssertions(raw.assertions as AssertionsConfig),
   }
 }
 
-export async function POST(request: NextRequest) {
-  const apiKey = process.env.OPENAI_API_KEY
-  const model = process.env.OPENAI_MODEL || 'gpt-5-mini'
-
-  if (!apiKey) {
-    return NextResponse.json({ error: 'OPENAI_API_KEY 未配置' }, { status: 500 })
+function normalizeBaseUrl(provider: Provider, baseUrl: string): string {
+  const trimmed = baseUrl.trim()
+  if (trimmed) {
+    return trimmed.replace(/\/+$/, '')
   }
 
+  if (provider === 'openai') {
+    return 'https://api.openai.com/v1'
+  }
+
+  return ''
+}
+
+export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null)
+  const provider = body?.provider as Provider | undefined
+  const apiKey = typeof body?.apiKey === 'string' ? body.apiKey.trim() : ''
+  const baseUrl = typeof body?.baseUrl === 'string' ? body.baseUrl.trim() : ''
+  const model = typeof body?.model === 'string' ? body.model.trim() : ''
   const document = typeof body?.document === 'string' ? body.document.trim() : ''
   const notes = typeof body?.notes === 'string' ? body.notes.trim() : ''
   const moduleName = typeof body?.moduleName === 'string' ? body.moduleName.trim() : ''
+  const moduleId = typeof body?.moduleId === 'string' ? body.moduleId.trim() : ''
+
+  if (!provider || !['openai', 'openai_compatible'].includes(provider)) {
+    return NextResponse.json({ error: '请选择有效的 AI 提供商' }, { status: 400 })
+  }
+
+  if (!apiKey) {
+    return NextResponse.json({ error: '请填写 API Key' }, { status: 400 })
+  }
+
+  if (!model) {
+    return NextResponse.json({ error: '请填写模型名称' }, { status: 400 })
+  }
 
   if (!document) {
     return NextResponse.json({ error: '请先粘贴接口文档内容' }, { status: 400 })
+  }
+
+  const normalizedBaseUrl = normalizeBaseUrl(provider, baseUrl)
+  if (!normalizedBaseUrl) {
+    return NextResponse.json({ error: '请填写 Base URL' }, { status: 400 })
   }
 
   const prompt = [
@@ -265,7 +275,7 @@ export async function POST(request: NextRequest) {
     document,
   ].filter(Boolean).join('\n\n')
 
-  const response = await fetch('https://api.openai.com/v1/responses', {
+  const response = await fetch(`${normalizedBaseUrl}/responses`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -305,12 +315,8 @@ export async function POST(request: NextRequest) {
   })
 
   const payload = await response.json() as OpenAIResponsesOutput
-
   if (!response.ok) {
-    return NextResponse.json(
-      { error: payload.error?.message || 'AI 生成失败' },
-      { status: response.status }
-    )
+    return NextResponse.json({ error: payload.error?.message || 'AI 生成失败' }, { status: response.status })
   }
 
   const outputText = extractOutputText(payload)
@@ -325,7 +331,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'AI 返回内容不是合法 JSON' }, { status: 502 })
   }
 
-  const cases = Array.isArray(parsed.cases) ? parsed.cases.map(normalizeCase) : []
+  const cases = Array.isArray(parsed.cases)
+    ? parsed.cases.map((item) => ({ ...normalizeCase(item), module_id: moduleId || undefined }))
+    : []
+
   if (cases.length === 0) {
     return NextResponse.json({ error: 'AI 未生成任何可用测试用例' }, { status: 502 })
   }
@@ -333,6 +342,8 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({
     summary: parsed.summary || '已生成候选测试用例',
     cases,
+    provider,
     model,
+    baseUrl: normalizedBaseUrl,
   })
 }

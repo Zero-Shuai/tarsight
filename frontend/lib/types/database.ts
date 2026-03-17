@@ -163,6 +163,22 @@ export interface AssertionsConfig {
   assertions: Assertion[]
 }
 
+export interface AITestCaseDraft {
+  module_id?: string
+  test_name: string
+  description: string
+  method: string
+  url: string
+  expected_status: number
+  headers: Record<string, string> | null
+  request_body: Record<string, any> | null
+  variables: Record<string, any> | null
+  tags: string[]
+  level: 'P0' | 'P1' | 'P2' | 'P3'
+  rationale?: string
+  assertions: AssertionsConfig
+}
+
 // Legacy assertion type (for backward compatibility)
 export interface LegacyAssertion {
   type: 'contains' | 'equals' | 'json_path' | 'regex'
