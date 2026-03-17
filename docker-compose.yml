@@ -32,6 +32,7 @@ services:
       # 服务端密钥（用于 API 路由）
       - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
       - APP_VERSION=${APP_VERSION:-dev}
+      - APP_DEPLOYED_AT=${APP_DEPLOYED_AT:-unknown}
       # Python 测试执行环境配置
       - PROJECT_ROOT=/app/backend
       - PYTHON_PATH=/usr/bin/python3

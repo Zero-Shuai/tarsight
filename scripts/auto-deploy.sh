@@ -92,10 +92,13 @@ fi
 FRONTEND_PORT="${FRONTEND_PORT:-25380}"
 PRE_DEPLOY_REF=$(git rev-parse HEAD)
 APP_VERSION=$(git rev-parse --short "$TARGET_REF" 2>/dev/null || git rev-parse --short HEAD)
+APP_DEPLOYED_AT=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
 export APP_VERSION
+export APP_DEPLOYED_AT
 export NEXT_PUBLIC_APP_VERSION="${APP_VERSION}"
 echo -e "${GREEN}✓ 当前版本: ${PRE_DEPLOY_REF}${NC}"
 echo -e "${GREEN}✓ 应用版本: ${APP_VERSION}${NC}"
+echo -e "${GREEN}✓ 部署时间: ${APP_DEPLOYED_AT}${NC}"
 
 # 2. 创建备份
 echo -e "${YELLOW}[2/7] 创建轻量备份...${NC}"
