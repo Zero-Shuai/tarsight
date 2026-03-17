@@ -56,6 +56,7 @@ curl http://test.shuai.click/api/status
 
 - `APP_RELEASE_VERSION`: 对外业务版本，例如 `1.0`
 - `APP_REVISION`: 当前代码修订，通常为 git 短 SHA
+- `APP_RELEASE_TAG`: 正式发布标签，例如 `v1.0.0`
 - `APP_DEPLOYED_AT`: 部署时间
 
 其中：

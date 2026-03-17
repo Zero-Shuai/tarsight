@@ -11,6 +11,7 @@ type SystemStatus = {
   service: string
   version: string
   revision: string
+  releaseTag: string | null
   deployedAt: string
   environment: string
   timestamp: string
@@ -74,7 +75,7 @@ export function SystemStatusCard() {
         </CardTitle>
         <CardDescription>查看当前线上版本、部署时间和运行环境</CardDescription>
       </CardHeader>
-      <CardContent className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <CardContent className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
         <div className="rounded-lg border border-slate-200 bg-white p-4">
           <div className="text-xs uppercase tracking-wide text-slate-500">版本</div>
           <div className="mt-2 font-mono text-sm text-slate-900">
@@ -85,6 +86,12 @@ export function SystemStatusCard() {
           <div className="text-xs uppercase tracking-wide text-slate-500">修订</div>
           <div className="mt-2 font-mono text-sm text-slate-900">
             {status?.revision || 'loading'}
+          </div>
+        </div>
+        <div className="rounded-lg border border-slate-200 bg-white p-4">
+          <div className="text-xs uppercase tracking-wide text-slate-500">发布标签</div>
+          <div className="mt-2 font-mono text-sm text-slate-900">
+            {status?.releaseTag || 'none'}
           </div>
         </div>
         <div className="rounded-lg border border-slate-200 bg-white p-4">

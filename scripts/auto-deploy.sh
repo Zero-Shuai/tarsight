@@ -101,6 +101,7 @@ fi
 APP_REVISION=$(git rev-parse --short "$TARGET_REF" 2>/dev/null || git rev-parse --short HEAD)
 APP_VERSION="${APP_RELEASE_VERSION}"
 APP_DEPLOYED_AT=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
+APP_RELEASE_TAG=""
 export APP_VERSION
 export APP_REVISION
 export APP_DEPLOYED_AT
@@ -144,7 +145,12 @@ fi
 echo -e "${YELLOW}拉取最新代码...${NC}"
 git fetch origin
 git reset --hard "$TARGET_REF"
+APP_RELEASE_TAG="$(git describe --tags --exact-match HEAD 2>/dev/null || true)"
+export APP_RELEASE_TAG
 echo -e "${GREEN}✓ 已更新到目标版本: $(git rev-parse HEAD)${NC}"
+if [ -n "${APP_RELEASE_TAG}" ]; then
+    echo -e "${GREEN}✓ 发布标签: ${APP_RELEASE_TAG}${NC}"
+fi
 echo ""
 
 # 4. 处理构建选项
