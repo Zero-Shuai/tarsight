@@ -5,6 +5,7 @@ export async function GET() {
     status: 'ok',
     service: 'tarsight-frontend',
     version: process.env.APP_VERSION || process.env.NEXT_PUBLIC_APP_VERSION || 'dev',
+    revision: process.env.APP_REVISION || 'unknown',
     deployedAt: process.env.APP_DEPLOYED_AT || 'unknown',
     environment: process.env.NODE_ENV || 'unknown',
     timestamp: new Date().toISOString(),
