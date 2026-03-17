@@ -37,14 +37,20 @@ bash scripts/set-release-version.sh 1.0
 ```
 
 3. 确认发布 tag 版本号，例如 `1.0.0`。
-4. 创建并推送 tag：
+4. 先执行发版前检查：
+
+```bash
+bash scripts/release-preflight.sh 1.0.0
+```
+
+5. 创建并推送 tag：
 
 ```bash
 bash scripts/create-release-tag.sh 1.0.0
 ```
 
-5. 等待 GitHub Actions 完成生产发布。
-6. 发布后验证：
+6. 等待 GitHub Actions 完成生产发布。
+7. 发布后验证：
 
 ```bash
 curl http://test.shuai.click/healthz
@@ -98,3 +104,10 @@ bash scripts/health-check.sh
 - 不要把普通 `push master` 当成生产发布。
 - 不要在未验证的情况下直接发布新功能到生产。
 - 不要让总结性文档触发生产发布。
+
+
+### 单独运行发版前检查
+
+```bash
+bash scripts/release-preflight.sh 1.0.0
+```

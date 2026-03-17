@@ -45,6 +45,8 @@ fi
 
 git fetch origin
 
+bash "$REPO_ROOT/scripts/release-preflight.sh" "$VERSION"
+
 echo "即将基于当前 HEAD 创建发布 tag: $TAG"
 echo "当前提交: $(git rev-parse --short HEAD)"
 
