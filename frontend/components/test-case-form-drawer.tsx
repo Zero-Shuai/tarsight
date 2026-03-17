@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { X, Loader2 } from 'lucide-react'
+import { X, Loader2, Sparkles, Wand2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -19,9 +19,30 @@ interface TestCaseFormDrawerProps {
   onSuccess: () => void
 }
 
+type AIGeneratedCase = {
+  test_name: string
+  description: string
+  method: string
+  url: string
+  expected_status: number
+  headers: Record<string, string> | null
+  request_body: Record<string, unknown> | null
+  variables: Record<string, unknown> | null
+  tags: string[]
+  level: 'P0' | 'P1' | 'P2' | 'P3'
+  rationale?: string
+  assertions: AssertionsConfig
+}
+
 export function TestCaseFormDrawer({ testCase, modules, onClose, onSuccess }: TestCaseFormDrawerProps) {
   const [loading, setLoading] = useState(false)
   const [previewCaseId, setPreviewCaseId] = useState('')
+  const [apiDocument, setApiDocument] = useState('')
+  const [aiNotes, setAiNotes] = useState('')
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiError, setAiError] = useState('')
+  const [aiSummary, setAiSummary] = useState('')
+  const [generatedCases, setGeneratedCases] = useState<AIGeneratedCase[]>([])
 
   const parseJsonField = (field: any) => {
     if (!field) return {}
@@ -183,6 +204,62 @@ export function TestCaseFormDrawer({ testCase, modules, onClose, onSuccess }: Te
     })
   }, [formData.tags])
 
+  const applyGeneratedCase = useCallback((generatedCase: AIGeneratedCase) => {
+    setFormData((prev) => ({
+      ...prev,
+      test_name: generatedCase.test_name,
+      description: generatedCase.description,
+      method: generatedCase.method,
+      url: generatedCase.url,
+      expected_status: generatedCase.expected_status,
+      headers: generatedCase.headers,
+      request_body: generatedCase.request_body,
+      variables: generatedCase.variables,
+      tags: generatedCase.tags,
+      level: generatedCase.level
+    }))
+    setAssertionsConfig(generatedCase.assertions)
+  }, [])
+
+  const handleGenerateCases = useCallback(async () => {
+    if (!apiDocument.trim()) {
+      setAiError('请先粘贴接口文档')
+      return
+    }
+
+    setAiLoading(true)
+    setAiError('')
+
+    try {
+      const selectedModule = modules.find((module) => module.id === formData.module_id)
+      const response = await fetch('/api/test-cases/ai-generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          document: apiDocument,
+          notes: aiNotes,
+          moduleName: selectedModule?.name || ''
+        })
+      })
+
+      const result = await response.json()
+      if (!response.ok) {
+        throw new Error(result.error || 'AI 生成失败')
+      }
+
+      setGeneratedCases(result.cases || [])
+      setAiSummary(result.summary || '')
+      setAiError('')
+    } catch (error) {
+      setAiError(error instanceof Error ? error.message : 'AI 生成失败')
+      setGeneratedCases([])
+    } finally {
+      setAiLoading(false)
+    }
+  }, [apiDocument, aiNotes, formData.module_id, modules])
+
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
     console.log('🔵 [Form Submit] ========== Starting submit process ==========')
@@ -321,6 +398,107 @@ export function TestCaseFormDrawer({ testCase, modules, onClose, onSuccess }: Te
 
         {/* Form Content */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+          {!testCase?.id && (
+            <div className="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 via-white to-slate-50 p-5 space-y-4">
+              <div className="flex items-start justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-slate-900">
+                    <Sparkles className="h-4 w-4 text-blue-600" />
+                    <span className="text-sm font-semibold">AI 生成用例</span>
+                  </div>
+                  <p className="text-sm text-slate-500">
+                    直接粘贴接口文档，自动生成候选接口测试用例，再选择一条应用到当前表单。
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  onClick={handleGenerateCases}
+                  disabled={aiLoading}
+                  className="bg-slate-900 text-white hover:bg-slate-800"
+                >
+                  {aiLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      生成中...
+                    </>
+                  ) : (
+                    <>
+                      <Wand2 className="mr-2 h-4 w-4" />
+                      AI 生成
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="api_document">接口文档</Label>
+                <Textarea
+                  id="api_document"
+                  value={apiDocument}
+                  onChange={(e) => setApiDocument(e.target.value)}
+                  placeholder="粘贴接口路径、请求方法、参数定义、请求示例、响应示例、错误码说明等内容"
+                  rows={8}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="ai_notes">额外要求</Label>
+                <Textarea
+                  id="ai_notes"
+                  value={aiNotes}
+                  onChange={(e) => setAiNotes(e.target.value)}
+                  placeholder="例如：优先生成正向+鉴权失败+参数缺失 3 条用例"
+                  rows={2}
+                />
+              </div>
+
+              {aiError && (
+                <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-600">
+                  {aiError}
+                </div>
+              )}
+
+              {aiSummary && (
+                <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600">
+                  {aiSummary}
+                </div>
+              )}
+
+              {generatedCases.length > 0 && (
+                <div className="space-y-3">
+                  {generatedCases.map((generatedCase, index) => (
+                    <div key={`${generatedCase.test_name}-${index}`} className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary">{generatedCase.level}</Badge>
+                            <span className="font-semibold text-slate-900">{generatedCase.test_name}</span>
+                          </div>
+                          <p className="text-sm text-slate-500">
+                            {generatedCase.method} {generatedCase.url} · 期望 {generatedCase.expected_status}
+                          </p>
+                        </div>
+                        <Button type="button" variant="outline" onClick={() => applyGeneratedCase(generatedCase)}>
+                          应用到表单
+                        </Button>
+                      </div>
+
+                      {generatedCase.description && (
+                        <p className="text-sm text-slate-600">{generatedCase.description}</p>
+                      )}
+
+                      {generatedCase.rationale && (
+                        <div className="text-xs text-slate-500">
+                          生成说明：{generatedCase.rationale}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Module & Level */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
