@@ -7,6 +7,10 @@ set -euo pipefail
 KEEP_BACKUPS=10
 BACKUP_ROOT="/opt/tarsight-deploy-backups"
 
+echo "========================================"
+echo "Tarsight Cleanup Started: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+echo "========================================"
+
 while [[ $# -gt 0 ]]; do
     case $1 in
         --keep-backups)
@@ -31,3 +35,6 @@ echo "清理 Docker build cache"
 docker builder prune -f
 
 echo "完成"
+echo "========================================"
+echo "Tarsight Cleanup Finished: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+echo "========================================"

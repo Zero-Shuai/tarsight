@@ -226,13 +226,16 @@ echo -e "${BLUE}========================================${NC}"
 if [ $ERRORS -eq 0 ] && [ $WARNINGS -eq 0 ]; then
     echo -e "${GREEN}✓ 所有检查通过，服务运行正常${NC}"
     echo -e "${BLUE}========================================${NC}"
+    echo "检查完成时间: $(date)"
     exit 0
 elif [ $ERRORS -eq 0 ] && [ $WARNINGS -gt 0 ]; then
     echo -e "${YELLOW}⚠ 发现 $WARNINGS 个警告，建议关注${NC}"
     echo -e "${BLUE}========================================${NC}"
+    echo "检查完成时间: $(date)"
     exit 0
 else
     echo -e "${RED}✗ 发现 $ERRORS 个错误和 $WARNINGS 个警告，请检查${NC}"
     echo -e "${BLUE}========================================${NC}"
+    echo "检查完成时间: $(date)"
     exit 1
 fi
